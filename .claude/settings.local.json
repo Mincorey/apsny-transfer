@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Test-Path \"c:\\\\PROJECTS\\\\APSNY-TRANSFER\\\\README.md\")",
+      "Bash(supabase --version)",
+      "Bash(npx supabase *)",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_8945512476e304ba3e5915b183eda5787e8897c4 npx supabase projects list)",
+      "Bash(curl -s -X POST https://api.supabase.com/v1/projects/uprcnpgmmnvsoxasuhun/database/query -H 'Authorization: Bearer sbp_8945512476e304ba3e5915b183eda5787e8897c4' -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(New-Item -ItemType Directory -Force -Path \"c:\\\\PROJECTS\\\\APSNY-TRANSFER\\\\docs\")",
+      "Bash(Write-Output \"done\")",
+      "Bash(Remove-Item \"c:\\\\PROJECTS\\\\APSNY-TRANSFER\\\\test-bid-ui.js\", \"c:\\\\PROJECTS\\\\APSNY-TRANSFER\\\\test-ui-changes.js\")"
+    ]
+  }
+}

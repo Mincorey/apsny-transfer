@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Приватные/функциональные разделы не индексируем
+Disallow: /profile
+Disallow: /messages
+Disallow: /conversations
+Disallow: /create
+Disallow: /my-trips
+
+# ПОСЛЕ ДЕПЛОЯ: укажите реальный домен
+Sitemap: https://ВАШ-ДОМЕН/sitemap.xml
