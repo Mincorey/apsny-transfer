@@ -413,10 +413,10 @@ export function TripDetail() {
   const canAcceptPrice = canBid && bids.length === 0;
 
   return (
-    <div className="h-screen overflow-hidden bg-background">
+    <div className="h-screen overflow-hidden bg-background flex flex-col">
       {isAuthenticated && <TopNav unreadCount={unreadCount} />}
 
-      <div className="flex-1 flex flex-col overflow-hidden min-h-screen text-on-surface">
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0 text-on-surface">
         {/* Top bar */}
         <header className="fixed top-0 md:top-16 left-0 right-0 z-40 md:flex md:items-center md:justify-end bg-surface/80 backdrop-blur-2xl border-b border-white/5 md:px-8 px-4">
           {ride?.auction_end_time && isActive ? (
@@ -437,7 +437,7 @@ export function TripDetail() {
           ) : null}
         </header>
 
-        <main className="flex-1 overflow-y-auto w-full">
+        <main className="flex-1 overflow-y-auto w-full min-h-0">
           <div className={`max-w-3xl mx-auto w-full md:p-8 p-4 pb-24 md:pb-8 space-y-5 ${hasHeaderContent ? 'pt-32 md:pt-32' : 'pt-6 md:pt-20'}`}>
         {/* Back button */}
         <button
@@ -1070,6 +1070,6 @@ export function TripDetail() {
         </div>
       )}
       </div>
-    </div>
+     </div>
   );
 }
