@@ -1,28 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ПОСЛЕ ДЕПЛОЯ: замените https://ВАШ-ДОМЕН на реальный домен.
   Перечислены только публичные статические страницы; страницы поездок
-  (/trips/:id) динамические и в статический sitemap не входят.
+  (/trips/:id) динамические, разделы за авторизацией в sitemap не входят.
 -->
-<urlset xmlns="http://www.sitemap.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://ВАШ-ДОМЕН/</loc>
+    <loc>https://apsny-transfer.vercel.app/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://ВАШ-ДОМЕН/about</loc>
+    <loc>https://apsny-transfer.vercel.app/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://ВАШ-ДОМЕН/rides/passenger</loc>
-    <changefreq>hourly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://apsny-transfer.vercel.app/contacts</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://ВАШ-ДОМЕН/rides/driver</loc>
-    <changefreq>hourly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://apsny-transfer.vercel.app/privacy</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://apsny-transfer.vercel.app/terms</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
 </urlset>

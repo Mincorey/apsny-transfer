@@ -8,5 +8,4 @@ Disallow: /conversations
 Disallow: /create
 Disallow: /my-trips
 
-# ПОСЛЕ ДЕПЛОЯ: укажите реальный домен
-Sitemap: https://ВАШ-ДОМЕН/sitemap.xml
+Sitemap: https://apsny-transfer.vercel.app/sitemap.xml
