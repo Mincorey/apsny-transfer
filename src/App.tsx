@@ -27,6 +27,7 @@ const MyTrips = lazy(() => import('./pages/MyTrips').then((m) => ({ default: m.M
 const Conversations = lazy(() => import('./pages/Conversations').then((m) => ({ default: m.Conversations })));
 const DirectChat = lazy(() => import('./pages/DirectChat').then((m) => ({ default: m.DirectChat })));
 const About = lazy(() => import('./pages/About').then((m) => ({ default: m.About })));
+const Payment = lazy(() => import('./pages/Payment').then((m) => ({ default: m.Payment })));
 const Contacts = lazy(() => import('./pages/Contacts').then((m) => ({ default: m.Contacts })));
 const Privacy = lazy(() => import('./pages/Privacy').then((m) => ({ default: m.Privacy })));
 const Terms = lazy(() => import('./pages/Terms').then((m) => ({ default: m.Terms })));
@@ -72,6 +73,7 @@ export default function App() {
               {/* Public standalone routes */}
               <Route path="/trips/:id" element={<TripDetail />} />
               <Route path="/about" element={<About />} />
+              <Route path="/payment" element={<Payment />} />
               <Route path="/contacts" element={<Contacts />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
