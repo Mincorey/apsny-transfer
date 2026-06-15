@@ -5,6 +5,7 @@ import { SITE } from '../../lib/siteInfo';
 
 const links = [
   { to: '/about', label: 'О проекте' },
+  { to: '/payment', label: 'Платные услуги' },
   { to: '/contacts', label: 'Контакты' },
   { to: '/privacy', label: 'Политика конфиденциальности' },
   { to: '/terms', label: 'Условия использования' },
