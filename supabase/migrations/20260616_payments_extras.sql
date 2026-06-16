@@ -168,3 +168,31 @@ as $$
 $$;
 revoke all on function public.get_ride_receipt(uuid) from public;
 grant execute on function public.get_ride_receipt(uuid) to authenticated;
+
+-- 4) Ручное удаление неоплаченного черновика владельцем ───────────────────────
+-- Удаляет только свою поездку и только в статусе 'draft' (оплаченную/активную
+-- так удалить нельзя — для неё есть «Отменить поездку»). Платёж 'pending'
+-- удалится каскадом (payments.ride_id ON DELETE CASCADE).
+create or replace function public.delete_unpaid_draft(p_ride_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare v_ride record;
+begin
+  select * into v_ride from public.rides where id = p_ride_id;
+  if not found then return false; end if;
+  if v_ride.creator_id <> auth.uid() then
+    raise exception 'Это не ваша поездка';
+  end if;
+  if v_ride.status <> 'draft' then
+    raise exception 'Удалить можно только неоплаченный черновик';
+  end if;
+  delete from public.rides
+  where id = p_ride_id and creator_id = auth.uid() and status = 'draft';
+  return true;
+end;
+$$;
+revoke all on function public.delete_unpaid_draft(uuid) from public;
+grant execute on function public.delete_unpaid_draft(uuid) to authenticated;

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, MapPin, Users, Clock, AlertCircle, Trophy, CreditCard, ReceiptText } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, Clock, AlertCircle, Trophy, CreditCard, ReceiptText, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { redirectToYooMoney } from '../lib/yoomoneyPay';
 
@@ -77,14 +77,19 @@ function TripCard({
   onClick,
   onPay,
   onReceipt,
+  onDelete,
   paying,
+  deleting,
 }: {
   trip: MyTrip;
   onClick: () => void;
   onPay: (rideId: string) => void;
   onReceipt: (rideId: string) => void;
+  onDelete: (rideId: string) => void;
   paying: boolean;
+  deleting: boolean;
 }) {
+  const [confirmDel, setConfirmDel] = useState(false);
   const statusColor = STATUS_COLORS[trip.status] || 'bg-surface-container-high text-on-surface';
   const statusLabel = STATUS_LABELS[trip.status] || trip.status;
   const isDraft = trip.status === 'draft';
@@ -168,6 +173,41 @@ function TripCard({
               </>
             )}
           </div>
+
+          {!confirmDel ? (
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={(e) => { e.stopPropagation(); setConfirmDel(true); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); setConfirmDel(true); } }}
+              className="mt-2 w-full flex items-center justify-center gap-1.5 py-2 text-xs text-on-surface-variant hover:text-red-400 transition-colors"
+            >
+              <Trash2 size={13} />
+              Удалить без оплаты
+            </div>
+          ) : (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="flex-1 text-xs text-on-surface-variant">Удалить черновик?</span>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={(e) => { e.stopPropagation(); if (!deleting) onDelete(trip.id); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); if (!deleting) onDelete(trip.id); } }}
+                className={`px-3 py-1.5 rounded-lg bg-red-500/15 border border-red-500/40 text-red-400 text-xs font-semibold ${deleting ? 'opacity-60 pointer-events-none' : ''}`}
+              >
+                {deleting ? 'Удаляю…' : 'Да, удалить'}
+              </div>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={(e) => { e.stopPropagation(); setConfirmDel(false); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); setConfirmDel(false); } }}
+                className="px-3 py-1.5 rounded-lg glass-card border border-outline-variant/40 text-on-surface-variant text-xs font-semibold"
+              >
+                Отмена
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -254,6 +294,7 @@ export function MyTrips() {
   const [tab, setTab] = useState<TripsTab>('active');
   const [error, setError] = useState<string | null>(null);
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   // Чтобы авто-выбор вкладки не перебивал ручной выбор пользователя.
   const tabResolved = useRef(false);
 
@@ -335,6 +376,20 @@ export function MyTrips() {
       setError('Не удалось начать оплату. Попробуйте ещё раз.');
     }
   }, []);
+
+  const handleDelete = useCallback(async (rideId: string) => {
+    try {
+      setDeletingId(rideId);
+      const { error: delErr } = await supabase.rpc('delete_unpaid_draft', { p_ride_id: rideId });
+      if (delErr) throw delErr;
+      await fetchTrips();
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('delete_unpaid_draft error:', err);
+      setError('Не удалось удалить черновик. Попробуйте ещё раз.');
+    } finally {
+      setDeletingId(null);
+    }
+  }, [fetchTrips]);
 
   // Если активных поездок нет, а есть выигранные аукционы — открываем вкладку
   // «Победы» (бейдж на «Поездки» зажигается именно из-за победы, и пользователь
@@ -439,7 +494,9 @@ export function MyTrips() {
                   onClick={() => navigate(`/trips/${trip.id}`)}
                   onPay={handlePay}
                   onReceipt={(id) => navigate(`/receipt/${id}`)}
+                  onDelete={handleDelete}
                   paying={payingId === trip.id}
+                  deleting={deletingId === trip.id}
                 />
               ))}
             </div>
