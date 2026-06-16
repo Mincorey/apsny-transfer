@@ -5,6 +5,12 @@
 ---
 
 [2026-06-16]
+Починка CI (GitHub Actions). Шаг npm run lint (tsc --noEmit) падал с 5 ошибками на supabase/functions/yoomoney-webhook/index.ts: это Deno-функция (глобальный Deno, импорт по URL https://esm.sh/...), а tsc проверял её браузерным конфигом проекта. На живой сайт не влияло (Vite этот файл не собирает, Vercel деплоит отдельно), но CI краснел с момента добавления вебхука. Фикс: в tsconfig.json добавлен "exclude": ["supabase", "dist", "node_modules"] — Deno-код больше не проверяется проектным tsc (его валидирует среда Supabase при деплое). После правки npm run lint проходит чисто.
+
+[2026-06-16]
+Финальный аудит безопасности (Supabase advisors) и ужесточение доступа. НАЙДЕНА И ЗАКРЫТА критичная дыра: из-за дефолтных привилегий Supabase функция publish_ride_paid была вызываема ролью authenticated — залогиненный пользователь мог бы вызвать её со своей меткой и опубликовать поездку в обход оплаты. Также tg_notify была доступна anon (потенциальный спам в Telegram). Исправление (миграция supabase/migrations/20260616_security_hardening.sql, применена к боевой БД): publish_ride_paid, tg_notify, cleanup_unpaid_drafts — execute только service_role (revoke с anon и authenticated); start_ride_payment, get_ride_receipt, delete_unpaid_draft — оставлен authenticated (внутри проверка auth.uid()), снят anon. Вебхук работает через service_role — не затронут (проверено). Дополнительно: у триггера force_ride_draft зафиксирован search_path (advisor 0011); добавлен индекс idx_payments_user на FK payments.user_id (advisor 0001). RLS включён на всех 11 таблицах; у payments политик нет намеренно (доступ только через серверные RPC). Предупреждения «unused index» проигнорированы — БД новая, индексы ещё не успели поучаствовать в запросах, удалять их не нужно.
+
+[2026-06-16]
 В README добавлен блок «Скриншоты» (3 изображения в ряд) и создана папка docs/screenshots/ с инструкцией по именам файлов (01-landing.png, 02-feed.png, 03-register.png). Проведён аудит секретов в рабочем дереве: жёстко зашитых ключей/токенов нет — клиент Supabase (src/lib/supabase.ts) и Edge Function берут значения из окружения; .env (с anon-ключом) в .gitignore и в репозиторий не попадает; service_role-ключ, секрет вебхука и токен Telegram хранятся только в Supabase. anon-ключ публичен по дизайну, данные защищены RLS.
 
 [2026-06-16]
