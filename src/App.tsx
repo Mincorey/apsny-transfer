@@ -25,6 +25,7 @@ const Conversations = lazy(() => import('./pages/Conversations').then((m) => ({ 
 const DirectChat = lazy(() => import('./pages/DirectChat').then((m) => ({ default: m.DirectChat })));
 const About = lazy(() => import('./pages/About').then((m) => ({ default: m.About })));
 const Payment = lazy(() => import('./pages/Payment').then((m) => ({ default: m.Payment })));
+const Receipt = lazy(() => import('./pages/Receipt').then((m) => ({ default: m.Receipt })));
 const PaidServices = lazy(() => import('./pages/PaidServices').then((m) => ({ default: m.PaidServices })));
 const Contacts = lazy(() => import('./pages/Contacts').then((m) => ({ default: m.Contacts })));
 const Privacy = lazy(() => import('./pages/Privacy').then((m) => ({ default: m.Privacy })));
@@ -72,6 +73,7 @@ export default function App() {
               <Route path="/trips/:id" element={<TripDetail />} />
               <Route path="/about" element={<About />} />
               <Route path="/payment" element={<Payment />} />
+              <Route path="/receipt/:rideId" element={<Receipt />} />
               <Route path="/paid-services" element={<PaidServices />} />
               <Route path="/contacts" element={<Contacts />} />
               <Route path="/privacy" element={<Privacy />} />

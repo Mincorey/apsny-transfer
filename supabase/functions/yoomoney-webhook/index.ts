@@ -48,6 +48,16 @@ async function hmacHex(secret: string, msg: string): Promise<string> {
   return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+// Уведомление администратору в Telegram (через RPC tg_notify). Ошибки глушим,
+// чтобы сбой Telegram не влиял на ответ вебхука ЮMoney.
+async function notifyAdmin(text: string): Promise<void> {
+  try {
+    await supabase.rpc("tg_notify", { p_text: text });
+  } catch (e) {
+    console.error("notifyAdmin failed", e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "GET") return new Response("yoomoney webhook alive", { status: 200 });
   if (req.method !== "POST") return new Response("method not allowed", { status: 405 });
@@ -79,8 +89,25 @@ Deno.serve(async (req) => {
 
   if (error) {
     console.error("publish_ride_paid error", error);
+    await notifyAdmin(
+      "❌ <b>Вебхук ЮMoney: ошибка БД</b>\n" +
+        "Метка: " + label + "\n" +
+        "Операция: " + (params["operation_id"] || "—") + "\n" +
+        (error.message || ""),
+    );
     // 500 — ЮMoney повторит уведомление (всего 3 попытки).
     return new Response("db error", { status: 500 });
+  }
+
+  // Платёж пришёл, но метки в БД нет — аномалия, сообщаем админу.
+  const result = (data ?? {}) as { ok?: boolean; reason?: string };
+  if (result.ok === false && result.reason === "unknown_label") {
+    await notifyAdmin(
+      "⚠️ <b>Вебхук ЮMoney: неизвестная метка</b>\n" +
+        "Метка: " + label + "\n" +
+        "Операция: " + (params["operation_id"] || "—") + "\n" +
+        "Сумма: " + (params["withdraw_amount"] || "—") + " ₽",
+    );
   }
 
   console.log("publish_ride_paid", data);

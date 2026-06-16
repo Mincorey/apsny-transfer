@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, MapPin, Users, Clock, AlertCircle, Trophy, CreditCard } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, Clock, AlertCircle, Trophy, CreditCard, ReceiptText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { redirectToYooMoney } from '../lib/yoomoneyPay';
 
@@ -65,16 +65,19 @@ function TripCard({
   trip,
   onClick,
   onPay,
+  onReceipt,
   paying,
 }: {
   trip: MyTrip;
   onClick: () => void;
   onPay: (rideId: string) => void;
+  onReceipt: (rideId: string) => void;
   paying: boolean;
 }) {
   const statusColor = STATUS_COLORS[trip.status] || 'bg-surface-container-high text-on-surface';
   const statusLabel = STATUS_LABELS[trip.status] || trip.status;
   const isDraft = trip.status === 'draft';
+  const isPaid = trip.status !== 'draft' && trip.status !== 'cancelled';
 
   return (
     <motion.button
@@ -148,6 +151,19 @@ function TripCard({
               Оплатить и опубликовать — 100 ₽
             </>
           )}
+        </div>
+      )}
+
+      {isPaid && (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={(e) => { e.stopPropagation(); onReceipt(trip.id); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onReceipt(trip.id); } }}
+          className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-xl glass-card border border-outline-variant/40 text-on-surface-variant hover:text-on-surface text-xs font-medium transition-colors"
+        >
+          <ReceiptText size={14} />
+          Квитанция об оплате
         </div>
       )}
     </motion.button>
@@ -405,6 +421,7 @@ export function MyTrips() {
                   trip={trip}
                   onClick={() => navigate(`/trips/${trip.id}`)}
                   onPay={handlePay}
+                  onReceipt={(id) => navigate(`/receipt/${id}`)}
                   paying={payingId === trip.id}
                 />
               ))}
