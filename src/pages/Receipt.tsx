@@ -162,7 +162,7 @@ export function Receipt() {
             <Row label="Дата и время оплаты">{fmtDateTime(data.paid_at)}</Row>
             <Row label="Идентификатор операции">{data.operation_id || '—'}</Row>
             <Row label="Метка платежа">{data.label}</Row>
-            <Row label="Получатель">{SITE.operatorName}</Row>
+            <Row label="Получатель">Сервис «{SITE.name}»</Row>
             <Row label="Способ оплаты">Банковская карта (платёжная система ЮMoney)</Row>
           </dl>
 

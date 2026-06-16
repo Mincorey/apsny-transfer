@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Mail, Send, CheckCircle, MessageCircle } from 'lucide-react';
+import { Mail, Send, CheckCircle } from 'lucide-react';
 import { InfoLayout, Section } from '../components/layout/InfoLayout';
 import { supabase } from '../lib/supabase';
-import { SITE, telegramUrl, mailtoUrl } from '../lib/siteInfo';
+import { SITE, mailtoUrl } from '../lib/siteInfo';
 
 export function Contacts() {
   const [name, setName] = useState('');
@@ -38,7 +38,7 @@ export function Contacts() {
   return (
     <InfoLayout title="Контакты" subtitle="Свяжитесь с нами любым удобным способом — мы на связи.">
       <Section title="Каналы связи">
-        <div className="grid sm:grid-cols-2 gap-3">
+        <div className="grid gap-3">
           <a
             href={mailtoUrl}
             className="flex items-center gap-3 p-4 rounded-2xl glass-card hover:bg-white/5 transition-colors"
@@ -49,22 +49,11 @@ export function Contacts() {
               <div className="text-on-surface font-medium break-all">{SITE.email}</div>
             </div>
           </a>
-          <a
-            href={telegramUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 p-4 rounded-2xl glass-card hover:bg-white/5 transition-colors"
-          >
-            <MessageCircle size={20} className="text-[#229ED9] shrink-0" />
-            <div>
-              <div className="text-xs text-outline">Telegram</div>
-              <div className="text-on-surface font-medium">@{SITE.telegram}</div>
-            </div>
-          </a>
         </div>
         <p className="text-sm">
-          Оператор сервиса: <span className="text-on-surface">{SITE.operatorName}</span>. Мы стараемся
-          отвечать в течение одного рабочего дня.
+          Это основной канал связи с поддержкой сервиса по любым вопросам — регистрация,
+          оплата, возвраты, обработка персональных данных. Мы стараемся отвечать в течение
+          одного рабочего дня.
         </p>
       </Section>
 
