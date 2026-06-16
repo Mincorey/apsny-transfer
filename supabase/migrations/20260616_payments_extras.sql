@@ -123,13 +123,22 @@ begin
   end if;
 
   v_msg :=
-    '✅ <b>Оплата публикации — 100 ₽</b>' || E'\n' ||
-    '🚗 ' ||
+    '🧾 <b>Оплачена публикация поездки</b>' || E'\n' ||
+    '<i>APSNY-TRANSFER · квитанция</i>' || E'\n' ||
+    '━━━━━━━━━━━━━━' || E'\n' ||
+    '💰 <b>Сумма:</b> ' || trim(to_char(v_pay.amount, 'FM999990')) || ' ₽' || E'\n' ||
+    '🚗 <b>Маршрут:</b> ' ||
       coalesce(replace(replace(replace(v_ride.origin,      '&','&amp;'),'<','&lt;'),'>','&gt;'), '?') ||
       ' → ' ||
       coalesce(replace(replace(replace(v_ride.destination, '&','&amp;'),'<','&lt;'),'>','&gt;'), '?') || E'\n' ||
-    '💳 Операция: ' || coalesce(p_operation_id, '—') || E'\n' ||
-    '🕒 ' || to_char(now() at time zone 'Europe/Moscow', 'DD.MM.YYYY HH24:MI') || ' (МСК)';
+    '📅 <b>Отправление:</b> ' ||
+      to_char(v_ride.departure_date, 'DD.MM.YYYY') || ' ' ||
+      to_char(v_ride.departure_time, 'HH24:MI') || E'\n' ||
+    '💳 <b>Операция:</b> ' || coalesce(p_operation_id, '—') || E'\n' ||
+    '🏷 <b>Метка:</b> ' || p_label || E'\n' ||
+    '🕒 <b>Оплачено:</b> ' || to_char(now() at time zone 'Europe/Moscow', 'DD.MM.YYYY HH24:MI') || ' (МСК)' || E'\n' ||
+    '━━━━━━━━━━━━━━' || E'\n' ||
+    '✅ Поездка опубликована, аукцион запущен';
   perform public.tg_notify(v_msg);
 
   return jsonb_build_object('ok', true);

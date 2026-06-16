@@ -61,6 +61,17 @@ function formatTime(timeStr: string): string {
   return timeStr.slice(0, 5);
 }
 
+// Неоплаченный черновик удаляется автоматически через 24ч после создания.
+function deletionCountdown(createdAt: string): string {
+  const deadline = new Date(createdAt).getTime() + 24 * 3600 * 1000;
+  const ms = deadline - Date.now();
+  if (ms <= 0) return 'будет удалён в ближайший час';
+  const h = Math.floor(ms / 3600000);
+  if (h >= 1) return `удалится без оплаты через ~${h} ч`;
+  const m = Math.max(1, Math.floor(ms / 60000));
+  return `удалится без оплаты через ~${m} мин`;
+}
+
 function TripCard({
   trip,
   onClick,
@@ -136,22 +147,28 @@ function TripCard({
       </div>
 
       {isDraft && (
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={(e) => { e.stopPropagation(); if (!paying) onPay(trip.id); }}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); if (!paying) onPay(trip.id); } }}
-          className={`mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl btn-mesh text-white text-sm font-bold ${paying ? 'opacity-60 pointer-events-none' : ''}`}
-        >
-          {paying ? (
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <>
-              <CreditCard size={15} />
-              Оплатить и опубликовать — 100 ₽
-            </>
-          )}
-        </div>
+        <>
+          <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-amber-400/90">
+            <Clock size={12} />
+            <span>{deletionCountdown(trip.created_at)}</span>
+          </div>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={(e) => { e.stopPropagation(); if (!paying) onPay(trip.id); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); if (!paying) onPay(trip.id); } }}
+            className={`mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl btn-mesh text-white text-sm font-bold ${paying ? 'opacity-60 pointer-events-none' : ''}`}
+          >
+            {paying ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <CreditCard size={15} />
+                Оплатить и опубликовать — 100 ₽
+              </>
+            )}
+          </div>
+        </>
       )}
 
       {isPaid && (

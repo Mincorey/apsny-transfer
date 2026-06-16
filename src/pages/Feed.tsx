@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
   Clock, MapPin, Users, Zap, Search, Star, Car, ChevronRight,
-  Timer, ShieldAlert, ArrowUpDown, Route, LogIn, RefreshCw,
+  Timer, ShieldAlert, ArrowUpDown, Route, LogIn, RefreshCw, CreditCard,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { redirectToYooMoney } from '../lib/yoomoneyPay';
 
 // Free-тариф Supabase: realtime-подключения дефицитны (лимит 200 одновременных).
 // Лента обновляется опросом, а не постоянной realtime-подпиской на всю таблицу rides
@@ -82,6 +83,7 @@ function pluralBids(n: number): string {
 }
 
 export function Feed({ feedType }: { feedType?: 'offer' | 'request' }) {
+  const navigate = useNavigate();
   const [rides, setRides] = useState<FeedRide[]>([]);
   const [userRole, setUserRole] = useState<'passenger' | 'driver' | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -91,8 +93,35 @@ export function Feed({ feedType }: { feedType?: 'offer' | 'request' }) {
   const [sortBy, setSortBy] = useState<SortKey>('newest');
   const [activeTab, setActiveTab] = useState<'offer' | 'request' | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [payingDraft, setPayingDraft] = useState(false);
   // Тип ленты, который сейчас показан — по нему опрос обновляет список.
   const lastTypeRef = useRef<'offer' | 'request'>('offer');
+
+  // Есть ли у пользователя неоплаченный черновик — для баннера-напоминания.
+  useEffect(() => {
+    if (!userId) { setDraftId(null); return; }
+    supabase
+      .from('rides')
+      .select('id')
+      .eq('creator_id', userId)
+      .eq('status', 'draft')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .then(({ data }) => setDraftId(data && data.length ? data[0].id : null));
+  }, [userId]);
+
+  const handlePayDraft = async () => {
+    if (!draftId) return;
+    try {
+      setPayingDraft(true);
+      const { data: label, error } = await supabase.rpc('start_ride_payment', { p_ride_id: draftId });
+      if (error) throw error;
+      redirectToYooMoney(label as string, draftId, 'AC');
+    } catch {
+      setPayingDraft(false);
+    }
+  };
 
   const fetchRides = useCallback(async (type: 'offer' | 'request') => {
     lastTypeRef.current = type;
@@ -223,6 +252,44 @@ export function Feed({ feedType }: { feedType?: 'offer' | 'request' }) {
           )}
         </div>
       </div>
+
+      {/* Напоминание о неоплаченном черновике */}
+      {isAuthenticated && draftId && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-2xl bg-amber-400/10 border border-amber-400/30"
+        >
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <CreditCard size={18} className="text-amber-400 shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-amber-300">У вас есть неоплаченная поездка</div>
+              <div className="text-xs text-on-surface-variant">
+                Завершите оплату 100 ₽, чтобы опубликовать её. Без оплаты черновик удалится через сутки.
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={handlePayDraft}
+              disabled={payingDraft}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl btn-mesh text-white text-sm font-bold disabled:opacity-60"
+            >
+              {payingDraft ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                'Оплатить 100 ₽'
+              )}
+            </button>
+            <button
+              onClick={() => navigate('/my-trips')}
+              className="px-4 py-2 rounded-xl glass-card border border-outline-variant/40 text-on-surface-variant hover:text-on-surface text-sm font-semibold transition-colors"
+            >
+              Мои поездки
+            </button>
+          </div>
+        </motion.div>
+      )}
 
       {/* Tab switcher (only for authenticated users without forced feedType) */}
       {isAuthenticated && !feedType && (
