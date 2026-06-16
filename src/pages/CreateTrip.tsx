@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { DatePicker } from '../components/ui/DatePicker';
 import { TimePicker } from '../components/ui/TimePicker';
 import { useToast } from '../context/ToastContext';
+import { redirectToYooMoney } from '../lib/yoomoneyPay';
 
 const BID_STEPS = [50, 100, 150, 200];
 const AUCTION_DURATIONS = [1, 3, 6, 12, 24];
@@ -130,27 +131,39 @@ export function CreateTrip() {
     try {
       if (!userId) throw new Error('Пользователь не авторизован');
       const isRequest = role === 'passenger';
-      const auction_end_time = new Date(Date.now() + formData.auction_duration * 3_600_000).toISOString();
-      const { error } = await supabase.from('rides').insert({
-        creator_id: userId,
-        type: isRequest ? 'request' : 'offer',
-        origin: formData.origin,
-        destination: formData.destination,
-        departure_date: formData.date,
-        departure_time: formData.time,
-        seats: formData.seats,
-        border_crossing: borderCrossing,
-        comment: formData.comment || null,
-        start_price: parseFloat(formData.price),
-        current_price: parseFloat(formData.price),
-        bid_step: formData.bid_step,
-        auction_end_time,
-        amenities: formData.amenities,
-        status: 'active',
-        ...(formData.vehicle_id ? { vehicle_id: formData.vehicle_id } : {}),
-      });
+
+      // status и auction_end_time здесь НЕ передаём — триггер БД force_ride_draft
+      // принудительно ставит status='draft' и обнуляет auction_end_time.
+      // Передаём auction_hours, чтобы таймер стартовал в момент публикации (после оплаты).
+      const { data: ride, error } = await supabase
+        .from('rides')
+        .insert({
+          creator_id: userId,
+          type: isRequest ? 'request' : 'offer',
+          origin: formData.origin,
+          destination: formData.destination,
+          departure_date: formData.date,
+          departure_time: formData.time,
+          seats: formData.seats,
+          border_crossing: borderCrossing,
+          comment: formData.comment || null,
+          start_price: parseFloat(formData.price),
+          current_price: parseFloat(formData.price),
+          bid_step: formData.bid_step,
+          auction_hours: formData.auction_duration,
+          amenities: formData.amenities,
+          ...(formData.vehicle_id ? { vehicle_id: formData.vehicle_id } : {}),
+        })
+        .select('id')
+        .single();
       if (error) throw error;
-      navigate('/');
+
+      const { data: label, error: payErr } = await supabase.rpc('start_ride_payment', {
+        p_ride_id: ride.id,
+      });
+      if (payErr) throw payErr;
+
+      redirectToYooMoney(label as string, ride.id as string, 'AC');
     } catch (error: any) {
       showToast('error', 'Ошибка создания', error.message || 'Не удалось создать поездку');
       setSubmitting(false);
@@ -533,7 +546,7 @@ export function CreateTrip() {
           ) : (
             <button type="button" onClick={handleSubmit} disabled={submitting}
               className="px-8 py-3 rounded-xl btn-mesh font-bold text-white disabled:opacity-50 flex items-center gap-2 shadow-[0_0_24px_rgba(0,240,255,0.3)] hover:shadow-[0_0_32px_rgba(0,240,255,0.5)]">
-              {submitting ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Опубликовать'}
+              {submitting ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Оплатить и опубликовать — 100 ₽'}
             </button>
           )}
         </div>

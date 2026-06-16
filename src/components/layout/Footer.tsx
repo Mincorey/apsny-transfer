@@ -1,11 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Route } from 'lucide-react';
 import { SITE } from '../../lib/siteInfo';
 
 const links = [
   { to: '/about', label: 'О проекте' },
-  { to: '/payment', label: 'Платные услуги' },
+  { to: '/paid-services', label: 'Платные услуги' },
   { to: '/contacts', label: 'Контакты' },
   { to: '/privacy', label: 'Политика конфиденциальности' },
   { to: '/terms', label: 'Условия использования' },

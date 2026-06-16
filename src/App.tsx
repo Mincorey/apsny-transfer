@@ -11,9 +11,6 @@ import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Session } from '@supabase/supabase-js';
 
-// Маршрутный code-splitting: каждая страница грузится отдельным чанком по мере
-// перехода — меньше вес первой загрузки на мобильном/медленном интернете.
-// Страницы — именованные экспорты, поэтому маппим их в default для React.lazy.
 const Auth = lazy(() => import('./pages/Auth').then((m) => ({ default: m.Auth })));
 const Feed = lazy(() => import('./pages/Feed').then((m) => ({ default: m.Feed })));
 const CreateTrip = lazy(() => import('./pages/CreateTrip').then((m) => ({ default: m.CreateTrip })));
@@ -28,6 +25,7 @@ const Conversations = lazy(() => import('./pages/Conversations').then((m) => ({ 
 const DirectChat = lazy(() => import('./pages/DirectChat').then((m) => ({ default: m.DirectChat })));
 const About = lazy(() => import('./pages/About').then((m) => ({ default: m.About })));
 const Payment = lazy(() => import('./pages/Payment').then((m) => ({ default: m.Payment })));
+const PaidServices = lazy(() => import('./pages/PaidServices').then((m) => ({ default: m.PaidServices })));
 const Contacts = lazy(() => import('./pages/Contacts').then((m) => ({ default: m.Contacts })));
 const Privacy = lazy(() => import('./pages/Privacy').then((m) => ({ default: m.Privacy })));
 const Terms = lazy(() => import('./pages/Terms').then((m) => ({ default: m.Terms })));
@@ -74,6 +72,7 @@ export default function App() {
               <Route path="/trips/:id" element={<TripDetail />} />
               <Route path="/about" element={<About />} />
               <Route path="/payment" element={<Payment />} />
+              <Route path="/paid-services" element={<PaidServices />} />
               <Route path="/contacts" element={<Contacts />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
@@ -104,7 +103,7 @@ export default function App() {
                 <Route path="/my-trips" element={<MyTrips />} />
               </Route>
 
-              {/* 404 for all unmatched paths (authenticated and unauthenticated) */}
+              {/* 404 for all unmatched paths */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

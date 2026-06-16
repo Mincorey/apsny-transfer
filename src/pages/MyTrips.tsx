@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, MapPin, Users, Clock, AlertCircle, Trophy } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, Clock, AlertCircle, Trophy, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { redirectToYooMoney } from '../lib/yoomoneyPay';
 
 interface MyTrip {
   id: string;
@@ -33,6 +34,7 @@ interface WonTrip {
 }
 
 const STATUS_COLORS: Record<string, string> = {
+  draft: 'bg-amber-400/15 text-amber-400 border-amber-400/30',
   active: 'bg-primary-container/20 text-primary-container border-primary-container/30',
   booked: 'bg-blue-400/15 text-blue-400 border-blue-400/30',
   completed: 'bg-green-400/15 text-green-400 border-green-400/30',
@@ -40,6 +42,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
+  draft: 'Ожидает оплаты',
   active: 'Активна',
   booked: 'Забронировано',
   completed: 'Завершена',
@@ -58,9 +61,20 @@ function formatTime(timeStr: string): string {
   return timeStr.slice(0, 5);
 }
 
-function TripCard({ trip, onClick }: { trip: MyTrip; onClick: () => void }) {
+function TripCard({
+  trip,
+  onClick,
+  onPay,
+  paying,
+}: {
+  trip: MyTrip;
+  onClick: () => void;
+  onPay: (rideId: string) => void;
+  paying: boolean;
+}) {
   const statusColor = STATUS_COLORS[trip.status] || 'bg-surface-container-high text-on-surface';
   const statusLabel = STATUS_LABELS[trip.status] || trip.status;
+  const isDraft = trip.status === 'draft';
 
   return (
     <motion.button
@@ -117,6 +131,25 @@ function TripCard({ trip, onClick }: { trip: MyTrip; onClick: () => void }) {
           {statusLabel}
         </div>
       </div>
+
+      {isDraft && (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={(e) => { e.stopPropagation(); if (!paying) onPay(trip.id); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); if (!paying) onPay(trip.id); } }}
+          className={`mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl btn-mesh text-white text-sm font-bold ${paying ? 'opacity-60 pointer-events-none' : ''}`}
+        >
+          {paying ? (
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <>
+              <CreditCard size={15} />
+              Оплатить и опубликовать — 100 ₽
+            </>
+          )}
+        </div>
+      )}
     </motion.button>
   );
 }
@@ -187,6 +220,7 @@ export function MyTrips() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TripsTab>('active');
   const [error, setError] = useState<string | null>(null);
+  const [payingId, setPayingId] = useState<string | null>(null);
   // Чтобы авто-выбор вкладки не перебивал ручной выбор пользователя.
   const tabResolved = useRef(false);
 
@@ -254,19 +288,34 @@ export function MyTrips() {
     fetchTrips();
   }, [fetchTrips]);
 
+  const handlePay = useCallback(async (rideId: string) => {
+    try {
+      setPayingId(rideId);
+      const { data: label, error: payErr } = await supabase.rpc('start_ride_payment', {
+        p_ride_id: rideId,
+      });
+      if (payErr) throw payErr;
+      redirectToYooMoney(label as string, rideId, 'AC');
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('start_ride_payment error:', err);
+      setPayingId(null);
+      setError('Не удалось начать оплату. Попробуйте ещё раз.');
+    }
+  }, []);
+
   // Если активных поездок нет, а есть выигранные аукционы — открываем вкладку
   // «Победы» (бейдж на «Поездки» зажигается именно из-за победы, и пользователь
   // должен сразу видеть выигрыш, а не пустую вкладку «Активные»).
   useEffect(() => {
     if (loading || tabResolved.current) return;
-    const activeCount = trips.filter((t) => ['active', 'booked'].includes(t.status)).length;
+    const activeCount = trips.filter((t) => ['draft', 'active', 'booked'].includes(t.status)).length;
     if (activeCount === 0 && wonTrips.length > 0) setTab('won');
     tabResolved.current = true;
   }, [loading, trips, wonTrips]);
 
   const filteredTrips = trips.filter((trip) => {
     if (tab === 'active') {
-      return ['active', 'booked'].includes(trip.status);
+      return ['draft', 'active', 'booked'].includes(trip.status);
     } else {
       return ['completed', 'cancelled'].includes(trip.status);
     }
@@ -355,6 +404,8 @@ export function MyTrips() {
                   key={trip.id}
                   trip={trip}
                   onClick={() => navigate(`/trips/${trip.id}`)}
+                  onPay={handlePay}
+                  paying={payingId === trip.id}
                 />
               ))}
             </div>
