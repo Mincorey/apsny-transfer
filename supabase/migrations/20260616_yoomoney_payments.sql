@@ -38,7 +38,7 @@ create trigger trg_force_ride_draft
 
 -- 4) Таблица платежей.
 create table if not exists public.payments (
-  id           uuid primary key default uuid_generate_v4(),
+  id           uuid primary key default gen_random_uuid(),
   label        text not null unique,                 -- метка для сверки платежа
   ride_id      uuid not null references public.rides(id) on delete cascade,
   user_id      uuid references public.users(id) on delete set null,
@@ -82,7 +82,9 @@ begin
   limit 1;
 
   if v_label is null then
-    v_label := 'apsny_' || replace(uuid_generate_v4()::text, '-', '');
+    -- gen_random_uuid() (pg_catalog) вместо uuid_generate_v4() (схема extensions):
+    -- у функции search_path=public, и uuid_generate_v4 из extensions внутри не виден.
+    v_label := 'apsny_' || replace(gen_random_uuid()::text, '-', '');
     insert into public.payments(label, ride_id, user_id, amount, status)
     values (v_label, p_ride_id, auth.uid(), 100, 'pending');
   end if;
