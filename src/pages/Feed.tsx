@@ -6,7 +6,7 @@ import {
   Timer, ShieldAlert, ArrowUpDown, Route, LogIn, RefreshCw, CreditCard,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { redirectToYooMoney } from '../lib/yoomoneyPay';
+import { publishRideFree } from '../lib/publishRide';
 
 // Free-тариф Supabase: realtime-подключения дефицитны (лимит 200 одновременных).
 // Лента обновляется опросом, а не постоянной realtime-подпиской на всю таблицу rides
@@ -115,9 +115,10 @@ export function Feed({ feedType }: { feedType?: 'offer' | 'request' }) {
     if (!draftId) return;
     try {
       setPayingDraft(true);
-      const { data: label, error } = await supabase.rpc('start_ride_payment', { p_ride_id: draftId });
-      if (error) throw error;
-      redirectToYooMoney(label as string, draftId, 'AC');
+      // Публикация временно бесплатна (на время подключения Platega).
+      await publishRideFree(draftId);
+      setDraftId(null);
+      navigate(`/trips/${draftId}`);
     } catch {
       setPayingDraft(false);
     }
@@ -263,9 +264,9 @@ export function Feed({ feedType }: { feedType?: 'offer' | 'request' }) {
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <CreditCard size={18} className="text-amber-400 shrink-0 mt-0.5" />
             <div className="min-w-0">
-              <div className="text-sm font-semibold text-amber-300">У вас есть неоплаченная поездка</div>
+              <div className="text-sm font-semibold text-amber-300">У вас есть неопубликованная поездка</div>
               <div className="text-xs text-on-surface-variant">
-                Завершите оплату 100 ₽, чтобы опубликовать её. Без оплаты черновик удалится через сутки.
+                Опубликуйте её, чтобы она появилась в ленте и стартовал аукцион. Неопубликованный черновик удалится через сутки.
               </div>
             </div>
           </div>

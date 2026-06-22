@@ -247,14 +247,8 @@ export function UserProfile() {
             </div>
           ) : (
             <div className="divide-y divide-outline-variant/10">
-              {canSeeContact(profile.show_phone) ? (
-                <ContactRow icon={<Phone size={14} />} label="Телефон">
-                  {formatPhone(profile.phone)}
-                </ContactRow>
-              ) : (
-                <HiddenContact label="Телефон" />
-              )}
-
+              {/* Телефон, WhatsApp и MAX скрыты на время модерации Platega —
+                  для связи доступен только Telegram. */}
               {telegramHandle !== null && (
                 canSeeContact(profile.show_telegram) ? (
                   <ContactRow icon={<span className="text-[10px] font-bold leading-none">TG</span>} label="Telegram">
@@ -264,30 +258,6 @@ export function UserProfile() {
                   </ContactRow>
                 ) : (
                   <HiddenContact label="Telegram" />
-                )
-              )}
-
-              {whatsappDigits !== null && (
-                canSeeContact(profile.show_whatsapp) ? (
-                  <ContactRow icon={<MessageCircle size={14} />} label="WhatsApp">
-                    <a href={`https://wa.me/${whatsappDigits}`} target="_blank" rel="noopener noreferrer" className="text-[#00f0ff] hover:underline">
-                      wa.me/{whatsappDigits}
-                    </a>
-                  </ContactRow>
-                ) : (
-                  <HiddenContact label="WhatsApp" />
-                )
-              )}
-
-              {maxDigits !== null && (
-                canSeeContact(profile.show_max) ? (
-                  <ContactRow icon={<span className="text-[10px] font-bold leading-none">MAX</span>} label="Мессенджер MAX">
-                    <a href={`https://max.im/${maxDigits}`} target="_blank" rel="noopener noreferrer" className="text-[#00f0ff] hover:underline">
-                      +{maxDigits}
-                    </a>
-                  </ContactRow>
-                ) : (
-                  <HiddenContact label="Мессенджер MAX" />
                 )
               )}
 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, MapPin, Users, Clock, AlertCircle, Trophy, CreditCard, ReceiptText, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { redirectToYooMoney } from '../lib/yoomoneyPay';
+import { publishRideFree } from '../lib/publishRide';
 
 interface MyTrip {
   id: string;
@@ -365,17 +365,16 @@ export function MyTrips() {
   const handlePay = useCallback(async (rideId: string) => {
     try {
       setPayingId(rideId);
-      const { data: label, error: payErr } = await supabase.rpc('start_ride_payment', {
-        p_ride_id: rideId,
-      });
-      if (payErr) throw payErr;
-      redirectToYooMoney(label as string, rideId, 'AC');
+      // Публикация временно бесплатна (на время подключения Platega).
+      await publishRideFree(rideId);
+      await fetchTrips();
     } catch (err) {
-      if (import.meta.env.DEV) console.error('start_ride_payment error:', err);
+      if (import.meta.env.DEV) console.error('publish_ride_free error:', err);
+      setError('Не удалось опубликовать поездку. Попробуйте ещё раз.');
+    } finally {
       setPayingId(null);
-      setError('Не удалось начать оплату. Попробуйте ещё раз.');
     }
-  }, []);
+  }, [fetchTrips]);
 
   const handleDelete = useCallback(async (rideId: string) => {
     try {

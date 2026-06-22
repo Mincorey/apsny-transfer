@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { DatePicker } from '../components/ui/DatePicker';
 import { TimePicker } from '../components/ui/TimePicker';
 import { useToast } from '../context/ToastContext';
-import { redirectToYooMoney } from '../lib/yoomoneyPay';
+import { publishRideFree } from '../lib/publishRide';
 
 const BID_STEPS = [50, 100, 150, 200];
 const AUCTION_DURATIONS = [1, 3, 6, 12, 24];
@@ -158,12 +158,10 @@ export function CreateTrip() {
         .single();
       if (error) throw error;
 
-      const { data: label, error: payErr } = await supabase.rpc('start_ride_payment', {
-        p_ride_id: ride.id,
-      });
-      if (payErr) throw payErr;
-
-      redirectToYooMoney(label as string, ride.id as string, 'AC');
+      // Публикация временно бесплатна (на время подключения Platega): сразу
+      // публикуем черновик и переходим на страницу поездки.
+      await publishRideFree(ride.id as string);
+      navigate(`/trips/${ride.id}`);
     } catch (error: any) {
       showToast('error', 'Ошибка создания', error.message || 'Не удалось создать поездку');
       setSubmitting(false);

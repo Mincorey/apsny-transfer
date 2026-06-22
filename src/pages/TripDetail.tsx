@@ -525,25 +525,7 @@ export function TripDetail() {
                 Telegram
               </a>
             )}
-            {canSeeCreatorContacts && ride.creator?.whatsapp && ride.creator.show_whatsapp !== false && (
-              <a
-                href={`https://wa.me/${ride.creator.whatsapp.replace(/\D/g, '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs px-3 py-1.5 rounded-xl bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/20 transition-colors"
-              >
-                WhatsApp
-              </a>
-            )}
-            {canSeeCreatorContacts && ride.creator?.phone && ride.creator.show_phone !== false && (
-              <a
-                href={`tel:${ride.creator.phone}`}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-on-surface-variant hover:bg-white/10 transition-colors"
-              >
-                <Phone size={11} />
-                {ride.creator.phone}
-              </a>
-            )}
+            {/* Телефон и WhatsApp скрыты на время модерации Platega — связь только через Telegram. */}
             {!canSeeCreatorContacts && isAuthenticated && !isOwnRide && (
               <span className="text-xs text-on-surface-variant/60 italic">
                 Контакты доступны победителю после завершения аукциона
@@ -810,25 +792,7 @@ export function TripDetail() {
                         Telegram
                       </a>
                     )}
-                    {ride.winner.whatsapp && (
-                      <a
-                        href={`https://wa.me/${ride.winner.whatsapp.replace(/\D/g, '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs px-3 py-1.5 rounded-xl bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/20 transition-colors"
-                      >
-                        WhatsApp
-                      </a>
-                    )}
-                    {ride.winner.phone && (
-                      <a
-                        href={`tel:${ride.winner.phone}`}
-                        className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-on-surface-variant hover:bg-white/10 transition-colors"
-                      >
-                        <Phone size={11} />
-                        {ride.winner.phone}
-                      </a>
-                    )}
+                    {/* Телефон и WhatsApp скрыты на время модерации Platega. */}
                   </div>
                 )}
               </div>
@@ -850,25 +814,7 @@ export function TripDetail() {
                       Telegram
                     </a>
                   )}
-                  {ride.creator?.whatsapp && ride.creator.show_whatsapp !== false && (
-                    <a
-                      href={`https://wa.me/${ride.creator.whatsapp.replace(/\D/g, '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs px-3 py-1.5 rounded-xl bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/20 transition-colors"
-                    >
-                      WhatsApp
-                    </a>
-                  )}
-                  {ride.creator?.phone && ride.creator.show_phone !== false && (
-                    <a
-                      href={`tel:${ride.creator.phone}`}
-                      className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-on-surface-variant hover:bg-white/10 transition-colors"
-                    >
-                      <Phone size={11} />
-                      {ride.creator.phone}
-                    </a>
-                  )}
+                  {/* Телефон и WhatsApp скрыты на время модерации Platega — связь через Telegram. */}
                 </div>
               </div>
             )}

@@ -2,15 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { CheckCircle2, Clock, Loader2, ReceiptText, ArrowRight, RefreshCcw } from 'lucide-react';
-import { redirectToYooMoney } from '../lib/yoomoneyPay';
+import { publishRideFree } from '../lib/publishRide';
 
-// Страница, на которую ЮMoney возвращает пользователя после оплаты
-// (successURL = /payment?status=pending&label=...&ride=...).
+// Страница статуса публикации поездки.
 //
-// Платёж подтверждается асинхронно: ЮMoney шлёт HTTP-уведомление на Edge
-// Function, та публикует поездку (draft → active). Поэтому здесь мы НЕ читаем
-// таблицу payments (она закрыта от клиента), а опрашиваем статус самой поездки
-// по её id — как только он станет 'active', значит оплата подтверждена.
+// На время подключения Platega публикация бесплатна. Сюда можно попасть со
+// старой ссылкой /payment?ride=...; мы опрашиваем статус поездки по её id и,
+// как только он становится 'active', показываем, что поездка опубликована.
+// Кнопка «Повторить» просто публикует черновик бесплатно через RPC.
 
 const POLL_INTERVAL_MS = 2500;
 const POLL_TIMEOUT_MS = 40_000;
@@ -64,9 +63,9 @@ export function Payment() {
     if (!rideId) return;
     try {
       setRetrying(true);
-      const { data: label, error } = await supabase.rpc('start_ride_payment', { p_ride_id: rideId });
-      if (error) throw error;
-      redirectToYooMoney(label as string, rideId, 'AC');
+      // Публикация временно бесплатна (на время подключения Platega).
+      await publishRideFree(rideId);
+      navigate(`/trips/${rideId}`);
     } catch {
       setRetrying(false);
     }
