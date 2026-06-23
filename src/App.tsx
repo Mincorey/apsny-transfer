@@ -30,6 +30,7 @@ const PaidServices = lazy(() => import('./pages/PaidServices').then((m) => ({ de
 const Contacts = lazy(() => import('./pages/Contacts').then((m) => ({ default: m.Contacts })));
 const Privacy = lazy(() => import('./pages/Privacy').then((m) => ({ default: m.Privacy })));
 const Terms = lazy(() => import('./pages/Terms').then((m) => ({ default: m.Terms })));
+const Offer = lazy(() => import('./pages/Offer').then((m) => ({ default: m.Offer })));
 const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })));
 
 function PageLoader() {
@@ -78,6 +79,7 @@ export default function App() {
               <Route path="/contacts" element={<Contacts />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
+              <Route path="/offer" element={<Offer />} />
               <Route
                 path="/rides/passenger"
                 element={<PublicLayout><Feed feedType="offer" /></PublicLayout>}

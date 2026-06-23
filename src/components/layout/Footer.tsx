@@ -8,6 +8,7 @@ const links = [
   { to: '/contacts', label: 'Контакты' },
   { to: '/privacy', label: 'Политика конфиденциальности' },
   { to: '/terms', label: 'Условия использования' },
+  { to: '/offer', label: 'Публичная оферта' },
 ];
 
 export function Footer() {
