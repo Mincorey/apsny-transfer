@@ -205,8 +205,16 @@ export function Auth() {
   }, []);
 
   const scrollToAuth = () => {
-    authRef.current?.scrollIntoView({ behavior: 'smooth' });
     setMobileMenuOpen(false);
+    // Кнопки «Я ЕДУ»/«Я ВЕЗУ» сначала переключают форму в режим регистрации
+    // (setIsLogin(false) добавляет поля), из-за чего раскладка меняется уже после
+    // клика. Поэтому скролл откладываем на следующий кадр + небольшую паузу —
+    // иначе первый клик скроллит по старой высоте и визуально «не срабатывает».
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        authRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 120);
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
