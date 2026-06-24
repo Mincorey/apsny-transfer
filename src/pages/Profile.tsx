@@ -11,6 +11,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { LogoutModal } from '../components/layout/Sidebar';
 import { Modal } from '../components/ui/Modal';
+import { normalizeWaDigits, waDisplay } from '../lib/contacts';
 
 interface UserProfile {
   id: string;
@@ -648,10 +649,10 @@ export function Profile() {
                   <div>
                     <label className="text-xs text-on-surface-variant mb-1 block">WhatsApp</label>
                     <input
-                      value={editData.whatsapp}
-                      onChange={(e) => setEditData({ ...editData, whatsapp: e.target.value.replace(/\D/g, '') })}
+                      value={waDisplay(editData.whatsapp)}
+                      onChange={(e) => setEditData({ ...editData, whatsapp: normalizeWaDigits(e.target.value) })}
                       className="w-full input-glass px-4 py-2.5 rounded-xl text-sm font-medium"
-                      placeholder="79407779001"
+                      placeholder="wa.me/7XXXXXXXXXX"
                       inputMode="numeric"
                     />
                   </div>
@@ -661,7 +662,7 @@ export function Profile() {
                       value={editData.max}
                       onChange={(e) => setEditData({ ...editData, max: applyMaxMask(e.target.value) })}
                       className="w-full input-glass px-4 py-2.5 rounded-xl text-sm font-medium"
-                      placeholder="+79407779001"
+                      placeholder="+79001234567"
                       inputMode="numeric"
                     />
                   </div>

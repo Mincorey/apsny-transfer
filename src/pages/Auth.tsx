@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Footer } from '../components/layout/Footer';
+import { normalizeWaDigits, waDisplay } from '../lib/contacts';
 
 function CounterValue({ value }: { value: string }) {
   const [displayValue, setDisplayValue] = useState('0');
@@ -830,7 +831,7 @@ export function Auth() {
                           value={phone}
                           onChange={(e) => setPhone(applyPhoneMask(e.target.value))}
                           className="w-full pl-12 pr-4 py-3.5 rounded-xl input-glass text-on-surface placeholder:text-outline font-medium transition-all"
-                          placeholder="+7 (999) 000-00-00"
+                          placeholder="+7 (900) 000-00-00"
                           required={!isLogin}
                         />
                       </div>
@@ -869,10 +870,10 @@ export function Auth() {
                         <input
                           type="text"
                           inputMode="numeric"
-                          value={whatsapp}
-                          onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, ''))}
+                          value={waDisplay(whatsapp)}
+                          onChange={(e) => setWhatsapp(normalizeWaDigits(e.target.value))}
                           className="w-full pl-12 pr-4 py-3.5 rounded-xl input-glass text-on-surface placeholder:text-outline font-medium transition-all"
-                          placeholder="79407779001"
+                          placeholder="wa.me/7XXXXXXXXXX"
                         />
                       </div>
                     </div>

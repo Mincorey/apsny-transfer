@@ -9,6 +9,7 @@ import { MainLayout } from './components/layout/MainLayout';
 import { PublicLayout } from './components/layout/PublicLayout';
 import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { Session } from '@supabase/supabase-js';
 
 const Auth = lazy(() => import('./pages/Auth').then((m) => ({ default: m.Auth })));
@@ -111,6 +112,7 @@ export default function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          <PWAInstallPrompt />
         </BrowserRouter>
       </ToastProvider>
     </ErrorBoundary>
