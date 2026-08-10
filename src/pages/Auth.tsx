@@ -243,11 +243,20 @@ export function Auth() {
         if (error) throw error;
 
         // Профиль создаётся БД-триггером handle_new_user из метаданных выше —
-        // надёжно при любой настройке подтверждения email. Этот upsert оставлен
-        // необязательным «fallback»: если сессия уже есть (подтверждение выключено),
-        // он обновит профиль, но его ошибка больше НЕ срывает регистрацию.
+        // надёжно при любой настройке подтверждения email. Этот insert оставлен
+        // необязательным «fallback» на случай, если триггер не отработал: если
+        // сессия уже есть (подтверждение email выключено), он создаст профиль.
+        // Его ошибка НЕ срывает регистрацию.
+        //
+        // Здесь именно insert, а не upsert. Колонки email, role, rating и
+        // trips_count закрыты от прямой записи клиентом (см. миграцию
+        // 20260810_fix_1_2_users_update_grants.sql — защита от накрутки рейтинга),
+        // а upsert разворачивается в INSERT ... ON CONFLICT DO UPDATE и требует
+        // прав UPDATE на все перечисленные колонки — то есть падал бы всегда.
+        // Обновлять уже существующий профиль при регистрации и не требуется:
+        // если он есть, insert вернёт ошибку дубликата ключа, и она проглатывается.
         if (data.user) {
-          const { error: upsertError } = await supabase.from('users').upsert({
+          const { error: insertError } = await supabase.from('users').insert({
             id: data.user.id,
             email: data.user.email,
             full_name: fullName,
@@ -256,8 +265,8 @@ export function Auth() {
             telegram: telegram ? telegram.replace('@', '') : null,
             whatsapp: whatsapp || null,
           });
-          if (upsertError) {
-            if (import.meta.env.DEV) console.warn('Профиль создаст триггер; клиентский upsert пропущен:', upsertError.message);
+          if (insertError) {
+            if (import.meta.env.DEV) console.warn('Профиль уже создан триггером; клиентский insert пропущен:', insertError.message);
           }
         }
       }
