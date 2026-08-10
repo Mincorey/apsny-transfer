@@ -35,7 +35,7 @@
 - **PostgREST** — через него идут ВСЕ запросы `supabase.from()` и `supabase.rpc()`
 - **Storage** — аватары пользователей и фото автомобилей
 - **Edge Functions (Deno)** — вебхук ЮMoney
-- **pg_cron** — 5 регулярных задач
+- **pg_cron** — 4 регулярные задачи (было 5; дубль отключён 10.08.2026, см. аудит п. 2.5)
 - **pg_net** — HTTP-запросы в Telegram из БД
 - **Vault** — токен Telegram-бота
 - Realtime — публикация настроена, но фронтенд её не использует (лента обновляется опросом). Можно не поднимать на старте.
@@ -67,7 +67,9 @@ pg_restore -d postgres --no-owner --no-privileges apsny_2026-08-10.dump
   - `0 * * * *` → `SELECT auto_complete_expired_rides()`
   - `0 3 * * *` → `SELECT run_retention_cleanup()`
   - `7 * * * *` → `SELECT public.cleanup_unpaid_drafts()`
-  - **`process_expired_auctions()` НЕ восстанавливать** — дубль `close_expired_auctions`, см. аудит п. 2.5
+  - **`process_expired_auctions()` НЕ восстанавливать** — дубль `close_expired_auctions`, см. аудит п. 2.5.
+    Функция удалена из базы 10.08.2026, в дампе её уже не будет. Если всё же встретится
+    в старом дампе — не создавать и в расписание не ставить.
 - [ ] Настройки Auth: подтверждение email вкл/выкл, SMTP, Site URL, Redirect URLs
 - [ ] Bucket'ы Storage + их политики
 - [ ] Сами файлы из Storage (аватары, фото машин)
