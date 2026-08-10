@@ -301,9 +301,13 @@ export function TripDetail() {
     setAccepting(true);
     setErrorMsg(null);
     try {
+      // p_bidder_id намеренно не передаём: с миграцией
+      // 20260810_fix_1_5_accept_current_price_auth.sql функция берёт участника
+      // только из сессии, а параметр оставлен лишь для совместимости и
+      // игнорируется. Отправлять его — значит слать серверу данные,
+      // которые он не должен принимать.
       const { error } = await supabase.rpc('accept_current_price', {
         p_ride_id: id,
-        p_bidder_id: userId,
       });
       if (error) throw error;
       fetchBids();
