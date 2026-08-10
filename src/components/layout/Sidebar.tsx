@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, User, LogOut, MessageSquare, Trophy, Briefcase, ChevronLeft, ChevronRight, Info, Mail } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, User, LogOut, Trophy, Briefcase, ChevronLeft, ChevronRight, Info, Mail } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Modal } from '../ui/Modal';
 
 interface SidebarProps {
-  unreadCount?: number;
   isCollapsed?: boolean;
   onToggle?: () => void;
 }
 
-export function Sidebar({ unreadCount = 0, isCollapsed = false, onToggle }: SidebarProps) {
+export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const confirmLogout = async () => {
@@ -36,7 +35,6 @@ export function Sidebar({ unreadCount = 0, isCollapsed = false, onToggle }: Side
 
         <nav className="space-y-1">
           <NavItem to="/" icon={<LayoutDashboard size={20} />} label="Лента аукционов" collapsed={isCollapsed} />
-          <NavItem to="/messages" icon={<MessageSquare size={20} />} label="Сообщения" badge={unreadCount} collapsed={isCollapsed} />
           <NavItem to="/create" icon={<PlusCircle size={20} />} label="Создать поездку" collapsed={isCollapsed} />
           <NavItem to="/my-trips" icon={<Briefcase size={20} />} label="Мои поездки" collapsed={isCollapsed} />
           <NavItem to="/ratings" icon={<Trophy size={20} />} label="Рейтинги" collapsed={isCollapsed} />

@@ -12,11 +12,11 @@ if (!supabaseUrl || !supabaseKey) {
 export type UserRole = 'passenger' | 'driver';
 export type RideType = 'request' | 'offer';
 export type RideStatus = 'active' | 'booked' | 'completed' | 'cancelled';
+// Тип 'new_message' убран вместе с внутренним чатом (10.08.2026).
 export type NotificationType =
   | 'new_bid'
   | 'auction_won'
   | 'auction_lost'
-  | 'new_message'
   | 'ride_cancelled'
   | 'review_received';
 

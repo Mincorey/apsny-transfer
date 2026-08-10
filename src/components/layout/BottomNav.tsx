@@ -1,22 +1,15 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, User, MessageSquare, Briefcase } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, User, Briefcase } from 'lucide-react';
 
 interface BottomNavProps {
-  unreadCount?: number;
   hasUnreadWon?: boolean;
 }
 
-export function BottomNav({ unreadCount = 0, hasUnreadWon = false }: BottomNavProps) {
+export function BottomNav({ hasUnreadWon = false }: BottomNavProps) {
   return (
     <div className="glass-panel border-t border-outline-variant/30 px-4 py-5 pb-7 flex justify-around items-center rounded-t-3xl shadow-[0_-8px_32px_rgba(0,0,0,0.4)]">
       <NavItem to="/" icon={<LayoutDashboard size={26} />} label="Лента" />
-      <NavItem
-        to="/messages"
-        icon={<MessageSquare size={26} />}
-        label="Чаты"
-        badge={unreadCount}
-      />
       <NavItem to="/create" icon={<PlusCircle size={34} />} label="Создать" isPrimary />
       <NavItem to="/my-trips" icon={<Briefcase size={26} />} label="Поездки" dot={hasUnreadWon} />
       <NavItem to="/profile" icon={<User size={26} />} label="Профиль" />

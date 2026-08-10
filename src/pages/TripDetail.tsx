@@ -4,10 +4,9 @@ import { supabase } from '../lib/supabase';
 import { getOptimizedImageUrl } from '../lib/imageOptimization';
 import { TopNav } from '../components/layout/TopNav';
 import { BottomNav } from '../components/layout/BottomNav';
-import { useUnreadCount } from '../hooks/useUnreadCount';
 import {
   ArrowLeft, Clock, Users, Timer, ShieldAlert, Star,
-  MessageCircle, Phone, LogIn, Trophy, Calendar, PenLine, X as XIcon, Car,
+  Phone, LogIn, Trophy, Calendar, PenLine, X as XIcon, Car,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ReviewModal } from '../components/ui/ReviewModal';
@@ -152,7 +151,6 @@ export function TripDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const unreadCount = useUnreadCount();
 
   const [ride, setRide] = useState<TripDetailRide | null>(null);
   const [bids, setBids] = useState<BidEntry[]>([]);
@@ -418,7 +416,7 @@ export function TripDetail() {
 
   return (
     <div className="h-screen overflow-hidden bg-background flex flex-col">
-      {isAuthenticated && <TopNav unreadCount={unreadCount} />}
+      {isAuthenticated && <TopNav />}
 
       <div className="flex-1 flex flex-col overflow-hidden min-h-0 text-on-surface">
         {/* Top bar */}
@@ -508,15 +506,6 @@ export function TripDetail() {
                 )}
               </div>
             </div>
-            {isAuthenticated && !isOwnRide && (
-              <button
-                onClick={() => navigate(`/messages/${ride.id}`)}
-                className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-surface-container hover:bg-white/10 border border-white/10 transition-colors"
-              >
-                <MessageCircle size={15} />
-                Написать
-              </button>
-            )}
           </div>
           <div className="flex flex-wrap gap-2">
             {canSeeCreatorContacts && ride.creator?.telegram && ride.creator.show_telegram !== false && (
@@ -1016,7 +1005,7 @@ export function TripDetail() {
       {/* Mobile Bottom Navigation — only for authenticated users */}
       {isAuthenticated && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
-          <BottomNav unreadCount={unreadCount} />
+          <BottomNav />
         </div>
       )}
       </div>

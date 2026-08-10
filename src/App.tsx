@@ -16,14 +16,10 @@ const Auth = lazy(() => import('./pages/Auth').then((m) => ({ default: m.Auth })
 const Feed = lazy(() => import('./pages/Feed').then((m) => ({ default: m.Feed })));
 const CreateTrip = lazy(() => import('./pages/CreateTrip').then((m) => ({ default: m.CreateTrip })));
 const Profile = lazy(() => import('./pages/Profile').then((m) => ({ default: m.Profile })));
-const Messages = lazy(() => import('./pages/Messages').then((m) => ({ default: m.Messages })));
-const Chat = lazy(() => import('./pages/Chat').then((m) => ({ default: m.Chat })));
 const TripDetail = lazy(() => import('./pages/TripDetail').then((m) => ({ default: m.TripDetail })));
 const UserProfile = lazy(() => import('./pages/UserProfile').then((m) => ({ default: m.UserProfile })));
 const Ratings = lazy(() => import('./pages/Ratings').then((m) => ({ default: m.Ratings })));
 const MyTrips = lazy(() => import('./pages/MyTrips').then((m) => ({ default: m.MyTrips })));
-const Conversations = lazy(() => import('./pages/Conversations').then((m) => ({ default: m.Conversations })));
-const DirectChat = lazy(() => import('./pages/DirectChat').then((m) => ({ default: m.DirectChat })));
 const About = lazy(() => import('./pages/About').then((m) => ({ default: m.About })));
 const Payment = lazy(() => import('./pages/Payment').then((m) => ({ default: m.Payment })));
 const Receipt = lazy(() => import('./pages/Receipt').then((m) => ({ default: m.Receipt })));
@@ -99,10 +95,6 @@ export default function App() {
                 <Route path="/" element={<Feed />} />
                 <Route path="/create" element={<CreateTrip />} />
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/messages" element={<Messages />} />
-                <Route path="/messages/:rideId" element={<Chat />} />
-                <Route path="/conversations" element={<Conversations />} />
-                <Route path="/conversations/:conversationId" element={<DirectChat />} />
                 <Route path="/users/:id" element={<UserProfile />} />
                 <Route path="/ratings" element={<Ratings />} />
                 <Route path="/my-trips" element={<MyTrips />} />

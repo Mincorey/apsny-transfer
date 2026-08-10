@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
-  ArrowLeft, Star, MessageCircle, Phone, Shield,
+  ArrowLeft, Star, Phone, Shield,
   User, MapPin, Calendar, LogIn, Clock,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -135,14 +135,6 @@ export function UserProfile() {
     });
   }
 
-  async function handleMessage() {
-    if (!currentUserId) { navigate('/login'); return; }
-    const { data, error } = await supabase.rpc('get_or_create_conversation', {
-      p_other_user_id: id!,
-    });
-    if (!error && data) navigate(`/conversations/${data}`);
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -270,19 +262,17 @@ export function UserProfile() {
           )}
         </div>
 
-        {/* Message button */}
-        {!isOwnProfile && (
+        {/* Кнопка «Написать» убрана вместе с внутренним чатом (10.08.2026).
+            Связь между участниками — через контакты, которые открываются
+            после завершения аукциона. */}
+        {!isOwnProfile && !currentUserId && (
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={handleMessage}
+            onClick={() => navigate('/login')}
             className="w-full btn-mesh py-3 rounded-xl font-semibold flex items-center justify-center gap-2 mb-6"
           >
-            {currentUserId ? (
-              <><MessageCircle size={18} />Написать</>
-            ) : (
-              <><LogIn size={18} />Войти для связи</>
-            )}
+            <LogIn size={18} />Войти для связи
           </motion.button>
         )}
 

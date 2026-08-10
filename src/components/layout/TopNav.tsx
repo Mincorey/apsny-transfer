@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, User, LogOut, MessageSquare, Trophy, Briefcase } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, User, LogOut, Trophy, Briefcase } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { LogoutModal } from './Sidebar';
 
 interface TopNavProps {
-  unreadCount?: number;
   hasUnreadWon?: boolean;
 }
 
-export function TopNav({ unreadCount = 0, hasUnreadWon = false }: TopNavProps) {
+export function TopNav({ hasUnreadWon = false }: TopNavProps) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   return (
@@ -25,7 +24,6 @@ export function TopNav({ unreadCount = 0, hasUnreadWon = false }: TopNavProps) {
 
           <nav className="flex items-center justify-center gap-0.5">
             <NavItem to="/" icon={<LayoutDashboard size={18} />} label="Лента" />
-            <NavItem to="/messages" icon={<MessageSquare size={18} />} label="Сообщения" badge={unreadCount} />
             <NavItem to="/create" icon={<PlusCircle size={18} />} label="Создать" />
             <NavItem to="/my-trips" icon={<Briefcase size={18} />} label="Поездки" dotBadge={hasUnreadWon} />
             <NavItem to="/ratings" icon={<Trophy size={18} />} label="Рейтинги" />

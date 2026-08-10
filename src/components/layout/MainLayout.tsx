@@ -6,14 +6,12 @@ import { BottomNav } from './BottomNav';
 import { Footer } from './Footer';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../context/ToastContext';
-import { useUnreadCount } from '../../hooks/useUnreadCount';
 import type { NotificationType } from '../../lib/supabase';
 
 const toastTypeMap: Record<NotificationType, 'bid' | 'won' | 'info' | 'success' | 'error'> = {
   new_bid:        'bid',
   auction_won:    'won',
   auction_lost:   'error',
-  new_message:    'info',
   ride_cancelled: 'error',
   review_received:'success',
 };
@@ -26,7 +24,6 @@ const NOTIF_POLL_INTERVAL_MS = 20_000; // опрос раз в 20 секунд
 export function MainLayout() {
   const { showToast } = useToast();
   const location = useLocation();
-  const unreadCount = useUnreadCount();
   const [hasUnreadWon, setHasUnreadWon] = useState(false);
 
   // Check for unread auction_won notifications on mount
@@ -107,7 +104,7 @@ export function MainLayout() {
 
   return (
     <div className="h-screen overflow-hidden bg-background">
-      <TopNav unreadCount={unreadCount} hasUnreadWon={hasUnreadWon} />
+      <TopNav hasUnreadWon={hasUnreadWon} />
 
       <main className="h-full overflow-y-auto w-full md:pt-16">
         <div className="max-w-4xl mx-auto w-full md:p-8 p-4 pb-32 md:pb-8">
@@ -128,7 +125,7 @@ export function MainLayout() {
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
-        <BottomNav unreadCount={unreadCount} hasUnreadWon={hasUnreadWon} />
+        <BottomNav hasUnreadWon={hasUnreadWon} />
       </div>
     </div>
   );
