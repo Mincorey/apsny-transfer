@@ -6,7 +6,7 @@ import {
   Timer, ShieldAlert, ArrowUpDown, Route, LogIn, RefreshCw, CreditCard,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { publishRideFree } from '../lib/publishRide';
+import { PUBLICATION_PRICE } from '../lib/publishRide';
 
 // Free-тариф Supabase: realtime-подключения дефицитны (лимит 200 одновременных).
 // Лента обновляется опросом, а не постоянной realtime-подпиской на всю таблицу rides
@@ -94,7 +94,6 @@ export function Feed({ feedType }: { feedType?: 'offer' | 'request' }) {
   const [activeTab, setActiveTab] = useState<'offer' | 'request' | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [payingDraft, setPayingDraft] = useState(false);
   // Тип ленты, который сейчас показан — по нему опрос обновляет список.
   const lastTypeRef = useRef<'offer' | 'request'>('offer');
 
@@ -111,17 +110,10 @@ export function Feed({ feedType }: { feedType?: 'offer' | 'request' }) {
       .then(({ data }) => setDraftId(data && data.length ? data[0].id : null));
   }, [userId]);
 
-  const handlePayDraft = async () => {
+  const handlePayDraft = () => {
     if (!draftId) return;
-    try {
-      setPayingDraft(true);
-      // Публикация временно бесплатна (на время подключения Platega).
-      await publishRideFree(draftId);
-      setDraftId(null);
-      navigate(`/trips/${draftId}`);
-    } catch {
-      setPayingDraft(false);
-    }
+    // Ведём на страницу оплаты с условиями услуги, а не публикуем сразу.
+    navigate(`/payment?ride=${draftId}`);
   };
 
   const fetchRides = useCallback(async (type: 'offer' | 'request') => {
@@ -271,16 +263,17 @@ export function Feed({ feedType }: { feedType?: 'offer' | 'request' }) {
             </div>
           </div>
           <div className="flex gap-2 shrink-0">
+            {/* Цена услуги показана, но зачёркнута: тариф 100 ₽ действует,
+                а пока ЮMoney подключается — размещение бесплатное.
+                Кнопка ведёт на страницу с полными условиями. */}
             <button
               onClick={handlePayDraft}
-              disabled={payingDraft}
-              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl btn-mesh text-white text-sm font-bold disabled:opacity-60"
+              className="flex flex-col items-center justify-center px-4 py-2 rounded-xl btn-mesh text-white text-sm font-bold"
             >
-              {payingDraft ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                'Оплатить 100 ₽'
-              )}
+              <span>Опубликовать</span>
+              <span className="text-[10px] font-medium opacity-90">
+                <s>{PUBLICATION_PRICE} ₽</s> сейчас бесплатно
+              </span>
             </button>
             <button
               onClick={() => navigate('/my-trips')}

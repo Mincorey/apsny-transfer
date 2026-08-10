@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, MapPin, Users, Clock, AlertCircle, Trophy, CreditCard, ReceiptText, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { publishRideFree } from '../lib/publishRide';
+import { PUBLICATION_PRICE } from '../lib/publishRide';
 
 interface MyTrip {
   id: string;
@@ -78,7 +78,6 @@ function TripCard({
   onPay,
   onReceipt,
   onDelete,
-  paying,
   deleting,
 }: {
   trip: MyTrip;
@@ -86,7 +85,6 @@ function TripCard({
   onPay: (rideId: string) => void;
   onReceipt: (rideId: string) => void;
   onDelete: (rideId: string) => void;
-  paying: boolean;
   deleting: boolean;
 }) {
   const [confirmDel, setConfirmDel] = useState(false);
@@ -157,21 +155,22 @@ function TripCard({
             <Clock size={12} />
             <span>{deletionCountdown(trip.created_at)}</span>
           </div>
+          {/* Тариф 100 ₽ показан зачёркнутым: пока ЮMoney подключается,
+              размещение бесплатное. Ведёт на страницу с условиями услуги. */}
           <div
             role="button"
             tabIndex={0}
-            onClick={(e) => { e.stopPropagation(); if (!paying) onPay(trip.id); }}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); if (!paying) onPay(trip.id); } }}
-            className={`mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl btn-mesh text-white text-sm font-bold ${paying ? 'opacity-60 pointer-events-none' : ''}`}
+            onClick={(e) => { e.stopPropagation(); onPay(trip.id); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onPay(trip.id); } }}
+            className="mt-2 w-full flex flex-col items-center justify-center py-2 rounded-xl btn-mesh text-white text-sm font-bold"
           >
-            {paying ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <>
-                <CreditCard size={15} />
-                Оплатить и опубликовать — 100 ₽
-              </>
-            )}
+            <span className="flex items-center gap-2">
+              <CreditCard size={15} />
+              Опубликовать поездку
+            </span>
+            <span className="text-[10px] font-medium opacity-90">
+              <s>{PUBLICATION_PRICE} ₽</s> сейчас бесплатно
+            </span>
           </div>
 
           {!confirmDel ? (
@@ -293,7 +292,6 @@ export function MyTrips() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TripsTab>('active');
   const [error, setError] = useState<string | null>(null);
-  const [payingId, setPayingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   // Чтобы авто-выбор вкладки не перебивал ручной выбор пользователя.
   const tabResolved = useRef(false);
@@ -362,19 +360,10 @@ export function MyTrips() {
     fetchTrips();
   }, [fetchTrips]);
 
-  const handlePay = useCallback(async (rideId: string) => {
-    try {
-      setPayingId(rideId);
-      // Публикация временно бесплатна (на время подключения Platega).
-      await publishRideFree(rideId);
-      await fetchTrips();
-    } catch (err) {
-      if (import.meta.env.DEV) console.error('publish_ride_free error:', err);
-      setError('Не удалось опубликовать поездку. Попробуйте ещё раз.');
-    } finally {
-      setPayingId(null);
-    }
-  }, [fetchTrips]);
+  // Ведём на страницу оплаты с условиями услуги, а не публикуем сразу.
+  const handlePay = useCallback((rideId: string) => {
+    navigate(`/payment?ride=${rideId}`);
+  }, [navigate]);
 
   const handleDelete = useCallback(async (rideId: string) => {
     try {
@@ -494,7 +483,6 @@ export function MyTrips() {
                   onPay={handlePay}
                   onReceipt={(id) => navigate(`/receipt/${id}`)}
                   onDelete={handleDelete}
-                  paying={payingId === trip.id}
                   deleting={deletingId === trip.id}
                 />
               ))}

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { DatePicker } from '../components/ui/DatePicker';
 import { TimePicker } from '../components/ui/TimePicker';
 import { useToast } from '../context/ToastContext';
-import { publishRideFree } from '../lib/publishRide';
+import { PUBLICATION_PRICE } from '../lib/publishRide';
 
 const BID_STEPS = [50, 100, 150, 200];
 const AUCTION_DURATIONS = [1, 3, 6, 12, 24];
@@ -158,10 +158,11 @@ export function CreateTrip() {
         .single();
       if (error) throw error;
 
-      // Публикация временно бесплатна (на время подключения Platega): сразу
-      // публикуем черновик и переходим на страницу поездки.
-      await publishRideFree(ride.id as string);
-      navigate(`/trips/${ride.id}`);
+      // Черновик создан. Ведём на страницу оплаты: там показаны условия
+      // услуги (тариф, способ оплаты) и кнопка публикации. Пока ЮMoney
+      // не подключена, публикация оттуда бесплатная — страница говорит
+      // об этом прямо.
+      navigate(`/payment?ride=${ride.id}`);
     } catch (error: any) {
       showToast('error', 'Ошибка создания', error.message || 'Не удалось создать поездку');
       setSubmitting(false);
@@ -544,7 +545,19 @@ export function CreateTrip() {
           ) : (
             <button type="button" onClick={handleSubmit} disabled={submitting}
               className="px-8 py-3 rounded-xl btn-mesh font-bold text-white disabled:opacity-50 flex items-center gap-2 shadow-[0_0_24px_rgba(0,240,255,0.3)] hover:shadow-[0_0_32px_rgba(0,240,255,0.5)]">
-              {submitting ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Оплатить и опубликовать — 100 ₽'}
+              {submitting ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                /* Тариф показан зачёркнутым: он действует, но пока ЮMoney
+                   подключается, размещение бесплатное. Далее — страница
+                   с полными условиями услуги. */
+                <span className="flex flex-col items-center leading-tight">
+                  <span>Опубликовать поездку</span>
+                  <span className="text-[10px] font-medium opacity-90">
+                    <s>{PUBLICATION_PRICE} ₽</s> сейчас бесплатно
+                  </span>
+                </span>
+              )}
             </button>
           )}
         </div>

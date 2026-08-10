@@ -163,7 +163,7 @@ export function Receipt() {
             <Row label="Идентификатор операции">{data.operation_id || '—'}</Row>
             <Row label="Метка платежа">{data.label}</Row>
             <Row label="Получатель">Сервис «{SITE.name}»</Row>
-            <Row label="Способ оплаты">Банковская карта / СБП (платёжная система Platega)</Row>
+            <Row label="Способ оплаты">Банковская карта / СБП (платёжная система ЮMoney)</Row>
           </dl>
 
           <div className="pt-4 border-t border-outline-variant/20 text-[11px] leading-relaxed text-on-surface-variant">
