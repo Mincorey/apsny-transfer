@@ -20,12 +20,18 @@ interface TripCreator {
   avatar_url: string | null;
   rating: number;
   trips_count: number;
+  // Контакты приходят уже отфильтрованными сервером (get_trip_view):
+  // до завершения аукциона — только разрешённые переключателями,
+  // после — все заполненные, но лишь второй стороне сделки.
   phone?: string | null;
   telegram?: string | null;
   whatsapp?: string | null;
+  max?: string | null;
   show_phone?: boolean;
   show_telegram?: boolean;
   show_whatsapp?: boolean;
+  show_max?: boolean;
+  contacts_unlocked?: boolean;
 }
 
 interface TripWinner {
@@ -35,6 +41,8 @@ interface TripWinner {
   phone?: string | null;
   telegram?: string | null;
   whatsapp?: string | null;
+  max?: string | null;
+  contacts_unlocked?: boolean;
 }
 
 const AMENITY_LABELS: Record<string, { icon: string; label: string }> = {
@@ -94,6 +102,64 @@ function AvatarLarge({ user }: { user: { full_name: string; avatar_url: string |
     <div className="w-14 h-14 rounded-full bg-[#00f0ff]/15 border border-[#00f0ff]/30 flex items-center justify-center text-lg font-bold text-[#00f0ff] shrink-0">
       {initials}
     </div>
+  );
+}
+
+/**
+ * Кнопки связи с участником.
+ *
+ * Ничего не решает сама: показывает ровно те контакты, которые прислал сервер.
+ * Фильтрацию делает get_trip_view — до завершения аукциона отдаёт только
+ * разрешённое переключателями профиля, после завершения все заполненные
+ * контакты, и только второй стороне сделки.
+ */
+function ContactButtons({
+  user,
+}: {
+  user: { phone?: string | null; telegram?: string | null; whatsapp?: string | null; max?: string | null } | null;
+}) {
+  if (!user) return null;
+
+  const tg = user.telegram ? user.telegram.replace(/@/g, '').trim() : '';
+  const wa = user.whatsapp ? user.whatsapp.replace(/\D/g, '') : '';
+  const mx = user.max ? user.max.replace(/\D/g, '') : '';
+  const tel = user.phone ? user.phone.replace(/[^\d+]/g, '') : '';
+
+  const base = 'text-xs px-3 py-1.5 rounded-xl border transition-colors';
+
+  return (
+    <>
+      {tel && (
+        <a href={`tel:${tel}`} className={`${base} bg-[#00f0ff]/10 border-[#00f0ff]/30 text-[#00f0ff] hover:bg-[#00f0ff]/20`}>
+          {user.phone}
+        </a>
+      )}
+      {tg && (
+        <a
+          href={`https://t.me/${tg}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`${base} bg-[#229ED9]/10 border-[#229ED9]/30 text-[#229ED9] hover:bg-[#229ED9]/20`}
+        >
+          Telegram
+        </a>
+      )}
+      {wa && (
+        <a
+          href={`https://wa.me/${wa}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`${base} bg-[#25D366]/10 border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/20`}
+        >
+          WhatsApp
+        </a>
+      )}
+      {mx && (
+        <span className={`${base} bg-surface-container border-white/10 text-on-surface-variant`}>
+          MAX: +{mx}
+        </span>
+      )}
+    </>
   );
 }
 
@@ -508,20 +574,10 @@ export function TripDetail() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {canSeeCreatorContacts && ride.creator?.telegram && ride.creator.show_telegram !== false && (
-              <a
-                href={`https://t.me/${ride.creator.telegram.replace('@', '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs px-3 py-1.5 rounded-xl bg-[#229ED9]/10 border border-[#229ED9]/30 text-[#229ED9] hover:bg-[#229ED9]/20 transition-colors"
-              >
-                Telegram
-              </a>
-            )}
-            {/* Телефон и WhatsApp скрыты на время модерации Platega — связь только через Telegram. */}
-            {!canSeeCreatorContacts && isAuthenticated && !isOwnRide && (
+            <ContactButtons user={ride.creator} />
+            {!ride.creator?.contacts_unlocked && isAuthenticated && !isOwnRide && (
               <span className="text-xs text-on-surface-variant/60 italic">
-                Контакты доступны победителю после завершения аукциона
+                Остальные контакты откроются победителю после завершения аукциона
               </span>
             )}
           </div>
@@ -775,17 +831,7 @@ export function TripDetail() {
                 <div className="font-semibold">{ride.winner.full_name}</div>
                 {isOwnRide && (
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {ride.winner.telegram && (
-                      <a
-                        href={`https://t.me/${ride.winner.telegram.replace('@', '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs px-3 py-1.5 rounded-xl bg-[#229ED9]/10 border border-[#229ED9]/30 text-[#229ED9] hover:bg-[#229ED9]/20 transition-colors"
-                      >
-                        Telegram
-                      </a>
-                    )}
-                    {/* Телефон и WhatsApp скрыты на время модерации Platega. */}
+                    <ContactButtons user={ride.winner} />
                   </div>
                 )}
               </div>
@@ -797,17 +843,7 @@ export function TripDetail() {
                   Вы выиграли этот аукцион! Свяжитесь с {isRequest ? 'пассажиром' : 'водителем'}:
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {ride.creator?.telegram && ride.creator.show_telegram !== false && (
-                    <a
-                      href={`https://t.me/${ride.creator.telegram.replace('@', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs px-3 py-1.5 rounded-xl bg-[#229ED9]/10 border border-[#229ED9]/30 text-[#229ED9] hover:bg-[#229ED9]/20 transition-colors"
-                    >
-                      Telegram
-                    </a>
-                  )}
-                  {/* Телефон и WhatsApp скрыты на время модерации Platega — связь через Telegram. */}
+                  <ContactButtons user={ride.creator} />
                 </div>
               </div>
             )}

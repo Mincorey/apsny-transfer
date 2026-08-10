@@ -11,7 +11,9 @@ interface PublicUserProfile {
   id: string;
   full_name: string;
   role: 'passenger' | 'driver';
-  phone: string;
+  // Контакты приходят уже отфильтрованными на сервере: если поле null — значит
+  // смотрящий не имеет права его видеть (либо оно просто не заполнено).
+  phone: string | null;
   telegram: string | null;
   whatsapp: string | null;
   max: string | null;
@@ -20,6 +22,9 @@ interface PublicUserProfile {
   show_telegram: boolean;
   show_whatsapp: boolean;
   show_max: boolean;
+  // true, если между смотрящим и владельцем профиля была состоявшаяся сделка —
+  // тогда открыты все заполненные контакты, независимо от переключателей.
+  contacts_unlocked: boolean;
   rating: number;
   trips_count: number;
   created_at: string;
@@ -65,7 +70,6 @@ export function UserProfile() {
   const [notFound, setNotFound] = useState(false);
   const [activeTab, setActiveTab] = useState<UserProfileTab>('rides');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [hasSharedRide, setHasSharedRide] = useState(false);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
 
   useEffect(() => {
@@ -111,21 +115,12 @@ export function UserProfile() {
     setRides((ridesResult.data ?? []) as PublicRide[]);
     setReviews((reviewsResult.data ?? []) as unknown as UserReview[]);
 
-    if (viewerId && viewerId !== id) {
-      const [s1, s2] = await Promise.all([
-        supabase.from('rides').select('id').eq('status', 'completed').eq('creator_id', viewerId).eq('winner_id', id!).limit(1).maybeSingle(),
-        supabase.from('rides').select('id').eq('status', 'completed').eq('creator_id', id!).eq('winner_id', viewerId).limit(1).maybeSingle(),
-      ]);
-      setHasSharedRide(!!(s1.data || s2.data));
-    }
-
+    // Раньше здесь было два отдельных запроса «была ли совместная поездка».
+    // Они дублировали серверную проверку и к тому же учитывали только статус
+    // completed, тогда как контакты открываются уже при booked. Теперь этот
+    // признак приходит из get_user_profile полем contacts_unlocked —
+    // минус два запроса к базе на каждый просмотр профиля.
     setLoading(false);
-  }
-
-  function canSeeContact(showField: boolean): boolean {
-    if (!currentUserId) return false;
-    if (hasSharedRide) return true;
-    return showField;
   }
 
   function formatDate(dateStr: string) {
@@ -239,23 +234,46 @@ export function UserProfile() {
             </div>
           ) : (
             <div className="divide-y divide-outline-variant/10">
-              {/* Телефон, WhatsApp и MAX скрыты на время модерации Platega —
-                  для связи доступен только Telegram. */}
-              {telegramHandle !== null && (
-                canSeeContact(profile.show_telegram) ? (
-                  <ContactRow icon={<span className="text-[10px] font-bold leading-none">TG</span>} label="Telegram">
-                    <a href={`https://t.me/${telegramHandle}`} target="_blank" rel="noopener noreferrer" className="text-[#00f0ff] hover:underline">
-                      @{telegramHandle}
-                    </a>
-                  </ContactRow>
-                ) : (
-                  <HiddenContact label="Telegram" />
-                )
+              {/* Что показать, решает сервер (get_user_profile): до совместной
+                  сделки — только разрешённое переключателями, после — всё
+                  заполненное. Здесь просто выводим то, что пришло. */}
+              {profile.phone && (
+                <ContactRow icon={<Phone size={13} />} label="Телефон">
+                  <a href={`tel:${profile.phone.replace(/[^\d+]/g, '')}`} className="text-[#00f0ff] hover:underline">
+                    {profile.phone}
+                  </a>
+                </ContactRow>
               )}
 
-              {!hasSharedRide && (
+              {telegramHandle && (
+                <ContactRow icon={<span className="text-[10px] font-bold leading-none">TG</span>} label="Telegram">
+                  <a href={`https://t.me/${telegramHandle}`} target="_blank" rel="noopener noreferrer" className="text-[#00f0ff] hover:underline">
+                    @{telegramHandle}
+                  </a>
+                </ContactRow>
+              )}
+
+              {whatsappDigits && (
+                <ContactRow icon={<span className="text-[10px] font-bold leading-none">WA</span>} label="WhatsApp">
+                  <a href={`https://wa.me/${whatsappDigits}`} target="_blank" rel="noopener noreferrer" className="text-[#25D366] hover:underline">
+                    +{whatsappDigits}
+                  </a>
+                </ContactRow>
+              )}
+
+              {maxDigits && (
+                <ContactRow icon={<span className="text-[10px] font-bold leading-none">MAX</span>} label="MAX">
+                  <span className="text-on-surface">+{maxDigits}</span>
+                </ContactRow>
+              )}
+
+              {!profile.phone && !telegramHandle && !whatsappDigits && !maxDigits && (
+                <HiddenContact label="Контакты скрыты" />
+              )}
+
+              {!profile.contacts_unlocked && !isOwnProfile && (
                 <p className="text-white/30 text-xs pt-3">
-                  Скрытые контакты откроются после совместной завершённой поездки
+                  Остальные контакты откроются после совместной поездки
                 </p>
               )}
             </div>
