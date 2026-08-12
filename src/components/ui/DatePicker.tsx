@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useDropdownPlacement } from './useDropdownPlacement';
+import { useDropdownInView } from './useDropdownInView';
 
 interface DatePickerProps {
   value: string; // YYYY-MM-DD
@@ -41,7 +41,7 @@ export function DatePicker({ value, onChange, placeholder = 'Выберите д
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const placement = useDropdownPlacement(open, ref, panelRef);
+  useDropdownInView(open, panelRef);
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -99,9 +99,11 @@ export function DatePicker({ value, onChange, placeholder = 'Выберите д
             // Фон сплошной: при полупрозрачном сквозь календарь читался блок
             // «Удобства в поездке» и числа месяца мешались с надписями.
             className={[
-              'absolute left-0 z-50 w-[300px] max-w-[calc(100vw-2rem)] rounded-2xl p-4',
+              'absolute left-0 top-full mt-2 z-50 w-[300px] max-w-[calc(100vw-2rem)] rounded-2xl p-4',
               'border border-[#00f0ff]/20 shadow-2xl bg-surface-container-high backdrop-blur-md',
-              placement === 'top' ? 'bottom-full mb-2' : 'top-full mt-2',
+              // Страховка от совсем низких окон: панель не выше экрана,
+              // остаток прокручивается внутри неё.
+              'max-h-[calc(100vh-9rem)] overflow-y-auto',
             ].join(' ')}
           >
             <div className="flex items-center justify-between mb-3">
