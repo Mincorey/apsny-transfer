@@ -3,14 +3,14 @@ import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, PlusCircle, User, LogOut, Trophy, Briefcase, Bell } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { LogoutModal } from './Sidebar';
+import { useNotificationBadges } from '../../context/NotificationBadgeContext';
 
-interface TopNavProps {
-  hasUnreadWon?: boolean;
-  unreadNotifications?: number;
-}
-
-export function TopNav({ hasUnreadWon = false, unreadNotifications = 0 }: TopNavProps) {
+export function TopNav() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  // Счётчики берём из общего контекста, а не из пропсов: TopNav рисуется и в
+  // MainLayout, и отдельно на карточке поездки — раньше во втором случае
+  // значок пропадал, потому что пропсы туда никто не передавал.
+  const { hasUnreadWon, unreadNotifications } = useNotificationBadges();
 
   return (
     <>

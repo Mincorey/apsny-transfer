@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PUBLICATION_PRICE } from '../lib/publishRide';
+import { pluralTrips } from '../lib/utils';
 
 // Free-тариф Supabase: realtime-подключения дефицитны (лимит 200 одновременных).
 // Лента обновляется опросом, а не постоянной realtime-подпиской на всю таблицу rides
@@ -543,7 +544,9 @@ function RideCard({
             {ride.creator?.full_name ?? 'Пользователь'}
           </div>
           <div className="flex items-center gap-2 mt-0.5">
-            {(ride.creator?.rating ?? 0) > 0 && (
+            {/* Рейтинг есть только у водителей. В предложении («offer») автор —
+                водитель, в запросе («request») — пассажир, у него оценки нет. */}
+            {ride.type === 'offer' && (ride.creator?.rating ?? 0) > 0 && (
               <span className="flex items-center gap-1 text-xs text-on-surface-variant">
                 <Star size={11} className="text-yellow-400 fill-yellow-400" />
                 {ride.creator!.rating.toFixed(1)}
@@ -551,7 +554,7 @@ function RideCard({
             )}
             {(ride.creator?.trips_count ?? 0) > 0 && (
               <span className="text-xs text-outline">
-                {ride.creator!.trips_count} поездок
+                {pluralTrips(ride.creator!.trips_count)}
               </span>
             )}
           </div>

@@ -6,6 +6,7 @@ import { Suspense, lazy, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { MainLayout } from './components/layout/MainLayout';
+import { NotificationBadgeProvider } from './context/NotificationBadgeContext';
 import { PublicLayout } from './components/layout/PublicLayout';
 import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -100,6 +101,10 @@ export default function App() {
       <ToastProvider>
         <BrowserRouter>
           <Canonical />
+          {/* Провайдер стоит выше маршрутов: счётчик значков в меню должен быть
+              одинаков и внутри MainLayout, и на страницах, объявленных
+              отдельными маршрутами (карточка поездки, «О проекте» и т.д.). */}
+          <NotificationBadgeProvider>
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Public standalone routes */}
@@ -167,6 +172,7 @@ export default function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          </NotificationBadgeProvider>
           <PWAInstallPrompt />
         </BrowserRouter>
       </ToastProvider>

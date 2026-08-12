@@ -1,11 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, PlusCircle, User, Briefcase, Bell } from 'lucide-react';
-
-interface BottomNavProps {
-  hasUnreadWon?: boolean;
-  unreadNotifications?: number;
-}
+import { useNotificationBadges } from '../../context/NotificationBadgeContext';
 
 /**
  * Нижнее меню (только мобильная вёрстка).
@@ -21,7 +17,9 @@ interface BottomNavProps {
  * Слева от круга — то, что человек смотрит: лента и уведомления. Справа —
  * то, что принадлежит ему: свои поездки и профиль.
  */
-export function BottomNav({ hasUnreadWon = false, unreadNotifications = 0 }: BottomNavProps) {
+export function BottomNav() {
+  const { hasUnreadWon, unreadNotifications } = useNotificationBadges();
+
   return (
     // <nav> вместо <div>: это ориентир для скринридера, по нему можно
     // перепрыгнуть к меню, не вычитывая всю страницу.

@@ -63,7 +63,7 @@ export function Modal({ open, onClose, title, children, size = 'md', label }: Mo
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/75 backdrop-blur-md" />
       <motion.div
         ref={panelRef}
         // role="dialog" + aria-modal сообщают скринридеру, что открылось
@@ -82,7 +82,10 @@ export function Modal({ open, onClose, title, children, size = 'md', label }: Mo
         initial={{ opacity: 0, scale: 0.95, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-        className={`relative glass-card rounded-2xl p-6 w-full ${maxW} border border-outline-variant/30 outline-none`}
+        // Фон окна сплошной. Класс glass-card даёт всего 3% заливки — сквозь
+        // окно читалось то, что под ним (например, кнопки ставок за текстом
+        // «Подтвердите ставку»), и текст сливался с содержимым страницы.
+        className={`relative bg-surface-container-high backdrop-blur-md rounded-2xl p-6 w-full ${maxW} border border-outline-variant/30 shadow-2xl outline-none`}
         onClick={(e) => e.stopPropagation()}
       >
         {title && (

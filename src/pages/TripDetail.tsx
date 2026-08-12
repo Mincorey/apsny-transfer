@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ReviewModal } from '../components/ui/ReviewModal';
-import { parseISODate, pluralSeats } from '../lib/utils';
+import { parseISODate, pluralSeats, pluralTrips } from '../lib/utils';
 import { Modal } from '../components/ui/Modal';
 import { Footer } from '../components/layout/Footer';
 import { useToast } from '../context/ToastContext';
@@ -477,6 +477,11 @@ export function TripDetail() {
     ? isRequest ? ride.current_price - parsedDelta : ride.current_price + parsedDelta
     : null;
   const canAcceptPrice = canBid && bids.length === 0;
+  // Последняя ставка — первая в списке. Если она наша, база не даст поставить
+  // ещё раз («дождитесь другого участника»), поэтому кнопки перебивания не
+  // показываем: раньше они предлагались и всегда упирались в эту ошибку.
+  const isMyLastBid = !!userId && bids[0]?.bidder?.id === userId;
+  const canRaiseBid = canBid && bids.length > 0 && !isMyLastBid;
 
   return (
     <div className="h-screen overflow-hidden bg-background flex flex-col">
@@ -555,7 +560,9 @@ export function TripDetail() {
             <div className="flex-1 min-w-0">
               <div className="font-display text-lg font-bold mb-2">{ride.creator?.full_name ?? 'Пользователь'}</div>
               <div className="space-y-1.5">
-                {(ride.creator?.rating ?? 0) > 0 && (
+                {/* Рейтинг есть только у водителей. В предложении автор —
+                    водитель, в запросе — пассажир, у него оценки нет. */}
+                {!isRequest && (ride.creator?.rating ?? 0) > 0 && (
                   <div className="flex items-center gap-1 text-sm text-on-surface-variant">
                     <Star size={13} className="text-yellow-400 fill-yellow-400" />
                     <span className="font-semibold text-on-surface">{ride.creator!.rating.toFixed(1)}</span>
@@ -564,8 +571,7 @@ export function TripDetail() {
                 )}
                 {(ride.creator?.trips_count ?? 0) > 0 && (
                   <div className="text-sm text-on-surface-variant">
-                    <span className="font-semibold text-on-surface">{ride.creator!.trips_count}</span>
-                    <span className="ml-1">{ride.creator!.trips_count === 1 ? 'поездка' : ride.creator!.trips_count < 5 ? 'поездки' : 'поездок'}</span>
+                    {pluralTrips(ride.creator!.trips_count)}
                   </div>
                 )}
               </div>
@@ -688,8 +694,23 @@ export function TripDetail() {
             </div>
           )}
 
+          {/* Наша ставка последняя — перебить самого себя нельзя */}
+          {canBid && isMyLastBid && (
+            <div className="pt-3 border-t border-outline-variant/30 flex items-start gap-2.5">
+              <Trophy size={16} className="text-[#00f0ff] shrink-0 mt-0.5" aria-hidden="true" />
+              <div>
+                <p className="text-sm font-semibold text-[#00f0ff]">Ваша ставка лидирует</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">
+                  {isRequest
+                    ? 'Дождитесь ответа — поднять ставку можно будет после того, как её перебьёт другой участник.'
+                    : 'Дождитесь ответа — сделать новую ставку можно будет после того, как её перебьёт другой участник.'}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Delta bid form — after auction started */}
-          {canBid && bids.length > 0 && (
+          {canRaiseBid && (
             <div className="space-y-3 pt-2 border-t border-outline-variant/30">
               <div className="text-xs text-outline uppercase tracking-widest">
                 {isRequest ? 'Снизить цену' : 'Повысить ставку'}

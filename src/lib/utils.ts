@@ -41,3 +41,8 @@ export function plural(n: number, one: string, few: string, many: string): strin
 export function pluralSeats(n: number): string {
   return `${n} ${plural(n, 'место', 'места', 'мест')}`;
 }
+
+/** «1 поездка», «3 поездки», «11 поездок». */
+export function pluralTrips(n: number): string {
+  return `${n} ${plural(n, 'поездка', 'поездки', 'поездок')}`;
+}

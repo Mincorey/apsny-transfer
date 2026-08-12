@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { TopNav } from './TopNav';
@@ -6,6 +6,7 @@ import { BottomNav } from './BottomNav';
 import { Footer } from './Footer';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../context/ToastContext';
+import { useNotificationBadges } from '../../context/NotificationBadgeContext';
 import type { NotificationType } from '../../lib/supabase';
 
 const toastTypeMap: Record<NotificationType, 'bid' | 'won' | 'info' | 'success' | 'error'> = {
@@ -24,48 +25,15 @@ const NOTIF_POLL_INTERVAL_MS = 20_000; // опрос раз в 20 секунд
 export function MainLayout() {
   const { showToast } = useToast();
   const location = useLocation();
-  const [hasUnreadWon, setHasUnreadWon] = useState(false);
-  // Счётчик непрочитанных для значка на пункте «Уведомления».
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  // Счётчики значков живут в общем контексте: их же использует TopNav на
+  // карточке поездки, которая объявлена отдельным маршрутом вне этого layout.
+  const { hasUnreadWon, setHasUnreadWon, bumpUnread, refresh } = useNotificationBadges();
   // Текущий адрес, доступный изнутри опроса уведомлений. Опрос заводится один
   // раз и живёт всё время, поэтому обычную переменную он бы «запомнил» такой,
   // какой она была в момент запуска, и навсегда считал бы, что мы на той же
   // странице. Ссылка обновляется при каждом переходе и всегда актуальна.
   const pathRef = useRef(location.pathname);
   useEffect(() => { pathRef.current = location.pathname; }, [location.pathname]);
-
-  // Check for unread auction_won notifications on mount
-  useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session?.user) return;
-      const { count } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', session.user.id)
-        .eq('type', 'auction_won')
-        .eq('is_read', false);
-      if ((count ?? 0) > 0) setHasUnreadWon(true);
-    });
-  }, []);
-
-  // Значок показывает настоящее число непрочитанных. Раньше он просто обнулялся
-  // при заходе на страницу уведомлений — цифра исчезала, а после перезагрузки
-  // возвращалась, потому что в базе ничего не менялось. Теперь пересчитываем
-  // на каждом переходе: страница уведомлений гасит записи по клику и кнопкой
-  // «Прочитать все», а сюда приходит уже честный итог.
-  useEffect(() => {
-    let cancelled = false;
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (cancelled || !session?.user) return;
-      const { count } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', session.user.id)
-        .eq('is_read', false);
-      if (!cancelled) setUnreadNotifications(count ?? 0);
-    });
-    return () => { cancelled = true; };
-  }, [location.pathname]);
 
   // Clear dot and mark as read when user opens My Trips
   useEffect(() => {
@@ -79,9 +47,10 @@ export function MainLayout() {
         .update({ is_read: true })
         .eq('user_id', session.user.id)
         .eq('type', 'auction_won')
-        .eq('is_read', false);
+        .eq('is_read', false)
+        .then(() => refresh());
     });
-  }, [location.pathname, hasUnreadWon]);
+  }, [location.pathname, hasUnreadWon, setHasUnreadWon, refresh]);
 
   // Опрос новых уведомлений (замена постоянной realtime-подписки).
   // Тостим только уведомления, появившиеся ПОСЛЕ загрузки страницы; исторические
@@ -106,7 +75,7 @@ export function MainLayout() {
       for (const n of data as { type: NotificationType; title: string; body?: string | null; created_at: string }[]) {
         showToast(toastTypeMap[n.type] ?? 'info', n.title, n.body ?? undefined);
         if (n.type === 'auction_won') setHasUnreadWon(true);
-        if (pathRef.current !== '/notifications') setUnreadNotifications(c => c + 1);
+        if (pathRef.current !== '/notifications') bumpUnread();
       }
       since = data[data.length - 1]?.created_at ?? since;
     };
@@ -128,11 +97,11 @@ export function MainLayout() {
       if (intervalId) clearInterval(intervalId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [showToast]);
+  }, [showToast, bumpUnread, setHasUnreadWon]);
 
   return (
     <div className="h-screen overflow-hidden bg-background">
-      <TopNav hasUnreadWon={hasUnreadWon} unreadNotifications={unreadNotifications} />
+      <TopNav />
 
       <main className="h-full overflow-y-auto w-full md:pt-16">
         <div className="max-w-4xl mx-auto w-full md:p-8 p-4 pb-32 md:pb-8">
@@ -153,7 +122,7 @@ export function MainLayout() {
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
-        <BottomNav hasUnreadWon={hasUnreadWon} unreadNotifications={unreadNotifications} />
+        <BottomNav />
       </div>
     </div>
   );

@@ -290,9 +290,10 @@ export function UserProfile() {
           </motion.button>
         )}
 
-        {/* Tabs */}
+        {/* Tabs. Отзывы бывают только о водителях — пассажира никто не
+            оценивает, поэтому у него вкладка не показывается. */}
         <div className="flex gap-2 mb-4">
-          {(['rides', 'reviews'] as UserProfileTab[]).map((tab) => (
+          {(profile.role === 'driver' ? (['rides', 'reviews'] as UserProfileTab[]) : (['rides'] as UserProfileTab[])).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}

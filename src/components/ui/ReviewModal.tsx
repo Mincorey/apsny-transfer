@@ -66,7 +66,7 @@ export function ReviewModal({ rideId, targetId, targetName, onClose, onDone }: R
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <motion.div
@@ -79,7 +79,9 @@ export function ReviewModal({ rideId, targetId, targetName, onClose, onDone }: R
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
         transition={{ duration: 0.2 }}
-        className="w-full max-w-sm glass-card rounded-3xl p-6 relative outline-none"
+        // Фон сплошной — по той же причине, что и в Modal: сквозь glass-card
+        // читалось содержимое страницы под окном.
+        className="w-full max-w-sm bg-surface-container-high backdrop-blur-md border border-outline-variant/30 shadow-2xl rounded-3xl p-6 relative outline-none"
       >
         <button
           onClick={onClose}
