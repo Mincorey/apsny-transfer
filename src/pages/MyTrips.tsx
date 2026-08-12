@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { ArrowLeft, MapPin, Users, Clock, AlertCircle, Trophy, CreditCard, ReceiptText, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PUBLICATION_PRICE } from '../lib/publishRide';
-import { formatRideDate, formatRideTime } from '../lib/utils';
+import { formatPrice, formatRideDate, formatRideTime } from '../lib/utils';
 
 interface MyTrip {
   id: string;
@@ -128,7 +128,7 @@ function TripCard({
 
           {/* Bids and price */}
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-on-surface">{trip.current_price} ₽</span>
+            <span className="text-sm font-semibold text-on-surface">{formatPrice(trip.current_price)}</span>
             {!!trip.bids_count && trip.bids_count > 0 && (
               <span className="text-xs bg-primary-container/20 text-primary-container px-2 py-1 rounded-md">
                 {trip.bids_count} {trip.bids_count === 1 ? 'ставка' : trip.bids_count < 5 ? 'ставки' : 'ставок'}
@@ -256,7 +256,7 @@ function WonTripCard({ trip, onClick }: { trip: WonTrip; onClick: () => void }) 
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-on-surface">{trip.current_price} ₽</span>
+            <span className="text-sm font-semibold text-on-surface">{formatPrice(trip.current_price)}</span>
             {trip.creator && (
               <div className="flex items-center gap-1.5">
                 {trip.creator.avatar_url ? (

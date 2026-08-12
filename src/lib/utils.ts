@@ -76,6 +76,49 @@ export function formatRideDateTime(dateStr: string, timeStr: string): string {
 }
 
 /**
+ * Цена с разделителем разрядов: «4 000 ₽».
+ *
+ * В карточке поездки цена печаталась через toLocaleString и получалась
+ * «4 000 ₽», а в списках подставлялась голым числом — «4000 ₽». Одна и та же
+ * сумма выглядела по-разному на соседних экранах.
+ */
+export function formatPrice(n: number): string {
+  return `${n.toLocaleString('ru-RU')} ₽`;
+}
+
+/**
+ * Дата из метки времени базы: «12 августа 2026 г.».
+ *
+ * Отличается от formatRideDate тем, что на входе полный timestamptz
+ * («2026-08-12T17:47:37.354+00»), а не «YYYY-MM-DD». Раньше такие значения
+ * (дата отзыва) прогонялись через разборщик для коротких дат — он резал строку
+ * по дефисам, получал «12T17:47:37.354+00» вместо числа и выдавал «Invalid
+ * Date». Именно это и висело на всех отзывах в чужом профиле.
+ */
+export function formatStampDate(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+const MONTHS_GENITIVE = [
+  'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+];
+
+/**
+ * Месяц и год в родительном падеже: «мая 2026 г.».
+ *
+ * Нужен для оборота «с мая 2026 г.». Стандартное форматирование даёт
+ * именительный — получалось «с май 2026 г.».
+ */
+export function formatMonthYearGenitive(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return `${MONTHS_GENITIVE[d.getMonth()]} ${d.getFullYear()} г.`;
+}
+
+/**
  * Телефон в читаемом виде: «+7 (940) 771-80-35».
  *
  * Свой номер показывался как есть — «+79407779001», а номер второй стороны

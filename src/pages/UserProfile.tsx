@@ -6,7 +6,7 @@ import {
   User, MapPin, Calendar, LogIn, Clock,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { formatRideDate, formatPhone, pluralTrips } from '../lib/utils';
+import { formatPrice, formatRideDate, formatStampDate, formatMonthYearGenitive, formatPhone, pluralTrips } from '../lib/utils';
 
 interface PublicUserProfile {
   id: string;
@@ -139,7 +139,8 @@ export function UserProfile() {
   }
 
   const particles = Array.from({ length: 6 });
-  const memberSince = new Date(profile.created_at).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+  // Родительный падеж: оборот «с мая 2026 г.», а не «с май 2026 г.».
+  const memberSince = formatMonthYearGenitive(profile.created_at);
   const telegramHandle = profile.telegram ? profile.telegram.replace(/@/g, '').trim() : null;
   const whatsappDigits = profile.whatsapp ? profile.whatsapp.replace(/\D/g, '') : null;
   const maxDigits = profile.max ? profile.max.replace(/\D/g, '') : null;
@@ -332,7 +333,7 @@ export function UserProfile() {
                       {ride.border_crossing && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400">Граница</span>
                       )}
-                      <span className="text-primary-container font-bold">{ride.current_price} ₽</span>
+                      <span className="text-primary-container font-bold">{formatPrice(ride.current_price)}</span>
                     </div>
                     <div className="flex items-center gap-2 text-white font-medium">
                       <MapPin size={14} className="text-primary-container/70 flex-shrink-0" />
@@ -384,7 +385,7 @@ export function UserProfile() {
                           ))}
                         </div>
                       </div>
-                      <span className="text-white/30 text-xs flex-shrink-0">{formatRideDate(review.created_at)}</span>
+                      <span className="text-white/30 text-xs flex-shrink-0">{formatStampDate(review.created_at)}</span>
                     </div>
                     {review.comment && (
                       <p className="text-white/70 text-sm leading-relaxed">{review.comment}</p>

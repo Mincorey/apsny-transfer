@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { LogoutModal } from '../components/layout/Sidebar';
 import { Modal } from '../components/ui/Modal';
 import { normalizeWaDigits, waDisplay } from '../lib/contacts';
-import { formatPhone, pluralSeats, pluralTrips } from '../lib/utils';
+import { formatPhone, formatRideDate, formatStampDate, pluralSeats, pluralTrips } from '../lib/utils';
 import { DriverLeaderboard } from '../components/ui/DriverLeaderboard';
 
 interface UserProfile {
@@ -838,7 +838,7 @@ export function Profile() {
                       <div className="font-semibold text-sm truncate">
                         {ride.origin} → {ride.destination}
                       </div>
-                      <div className="text-xs text-on-surface-variant mt-0.5">{ride.departure_date}</div>
+                      <div className="text-xs text-on-surface-variant mt-0.5">{formatRideDate(ride.departure_date)}</div>
                     </div>
                     <div className="shrink-0 text-right">
                       <div className="font-bold text-sm text-primary-container">
@@ -889,9 +889,7 @@ export function Profile() {
                         {review.reviewer?.full_name || 'Пользователь'}
                       </div>
                       <div className="text-xs text-on-surface-variant">
-                        {new Date(review.created_at).toLocaleDateString('ru-RU', {
-                          day: 'numeric', month: 'long', year: 'numeric',
-                        })}
+                        {formatStampDate(review.created_at)}
                       </div>
                     </div>
                     <div className="flex items-center gap-0.5 shrink-0">
