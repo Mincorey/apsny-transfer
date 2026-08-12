@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, Share2, Plus, Download } from 'lucide-react';
 
 // Предложение установить сайт как приложение (Add to Home Screen).

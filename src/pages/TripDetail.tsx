@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getOptimizedImageUrl } from '../lib/imageOptimization';
@@ -6,10 +6,11 @@ import { TopNav } from '../components/layout/TopNav';
 import { BottomNav } from '../components/layout/BottomNav';
 import {
   ArrowLeft, Clock, Users, Timer, ShieldAlert, Star,
-  Phone, LogIn, Trophy, Calendar, PenLine, X as XIcon, Car,
+  LogIn, Trophy, Calendar, PenLine, X as XIcon, Car,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ReviewModal } from '../components/ui/ReviewModal';
+import { parseISODate } from '../lib/utils';
 import { Modal } from '../components/ui/Modal';
 import { Footer } from '../components/layout/Footer';
 import { useToast } from '../context/ToastContext';
@@ -192,8 +193,7 @@ function AuctionTimer({ endTime, large }: { endTime: string | null; large?: bool
 }
 
 function formatDate(dateStr: string): string {
-  const [y, mo, d] = dateStr.split('-').map(Number);
-  return new Date(y, mo - 1, d).toLocaleDateString('ru-RU', {
+  return parseISODate(dateStr).toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -448,14 +448,12 @@ export function TripDetail() {
 
   const isOwnRide = userId === ride.creator_id;
   const isWinner = userId === ride.winner_id;
-  const isParticipant = isOwnRide || isWinner;
   const isCompleted = ride.status === 'completed';
   const isBooked = ride.status === 'booked';
   const isActive = ride.status === 'active';
   const hasHeaderContent = (!!ride.auction_end_time && isActive) || !isAuthenticated;
   const isRequest = ride.type === 'request';
   const canBid = isAuthenticated && !isOwnRide && isActive;
-  const canSeeCreatorContacts = isParticipant && (isCompleted || isBooked);
 
   // Роли по типу поездки: водителя оценивает пассажир.
   // offer: водитель = создатель, пассажир = победитель. request: наоборот.

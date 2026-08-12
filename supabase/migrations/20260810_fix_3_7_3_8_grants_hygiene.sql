@@ -1,0 +1,84 @@
+-- ============================================================
+-- 20260810_fix_3_7_3_8_grants_hygiene.sql
+--
+-- Закрывает пункты 3.7 и 3.8 аудита AUDIT_2026-08-10.md — гигиена прав
+-- (патч 8.7 из отчёта, часть про гранты; дубль cron-задачи и ограничения
+-- длины текстов из того же патча закрыты раньше отдельными миграциями
+-- 20260810_fix_2_5_remove_duplicate_cron.sql и
+-- 20260810_fix_3_3_text_length_limits.sql).
+--
+-- 3.7 — EXECUTE для anon там, где не нужно
+-- ------------------------------------------
+-- publish_ride_free, get_my_profile, force_ride_draft были доступны
+-- анонимам. Внутри все три падают из-за auth.uid() IS NULL, то есть
+-- реального ущерба не было, но это лишняя поверхность атаки, и линтер
+-- Supabase (get_advisors) на неё указывал.
+--   • publish_ride_free, get_my_profile — отозваны у anon, оставлены
+--     у authenticated (реально используются: Profile.tsx вызывает
+--     get_my_profile, lib/publishRide.ts — publish_ride_free; в обоих
+--     случаях только после проверки авторизации на клиенте).
+--   • force_ride_draft — отозван у anon, authenticated И PUBLIC. Это
+--     служебная функция триггера BEFORE INSERT на rides, с клиента её
+--     не вызывают вообще (проверено поиском по src/ — только упоминания
+--     в комментариях).
+--
+-- 3.8 — мёртвые гранты на payments
+-- -----------------------------------
+-- У anon и authenticated был SELECT/INSERT/UPDATE (плюс DELETE/TRUNCATE/
+-- REFERENCES/TRIGGER — по умолчанию выданные при создании таблицы) на
+-- ВСЕ колонки payments, включая status, amount, operation_id. Спасало
+-- только то, что на таблице включён RLS без единой политики → все строки
+-- отсекаются. Это работало, но держалось на одной настройке — случайно
+-- добавленная политика открыла бы клиенту запись в status='paid' напрямую.
+-- REVOKE ALL убирает саму возможность, RLS остаётся вторым рубежом.
+--
+-- ПРОВЕРЕНО НА БОЕВОЙ БАЗЕ (в транзакции с откатом)
+-- ---------------------------------------------------
+--   anon SELECT payments             → permission denied
+--   authenticated SELECT payments    → permission denied
+--   anon EXECUTE publish_ride_free   → permission denied
+--   anon EXECUTE get_my_profile      → permission denied
+--   authenticated EXECUTE get_my_profile → по-прежнему работает
+--   authenticated EXECUTE force_ride_draft → permission denied
+--
+-- НЕ ВХОДИТ В ЭТОТ ПАТЧ
+-- ----------------------
+-- Пункт 8.8 отчёта («REVOKE EXECUTE ON publish_ride_free FROM
+-- authenticated») сюда намеренно не включён — публикация ещё бесплатная
+-- (ЮMoney не подключена, PAYMENTS_ENABLED = false в publishRide.ts).
+-- Отзыв прав обычным пользователям сломает публикацию поездок прямо
+-- сейчас. Применить отдельно непосредственно перед включением приёма
+-- платежей.
+--
+-- ПОПУТНО НАЙДЕНО ТЕМ ЖЕ ЛИНТЕРОМ (сверх пункта 3.7 аудита)
+-- ------------------------------------------------------------
+-- После применения патча get_advisors показал ту же проблему у функции
+-- enforce_contact_rate_limit — это триггер antispam-лимита из миграции
+-- 20260810_fix_3_4_contact_rate_limit.sql, написанной уже после аудита.
+-- У новых функций Postgres по умолчанию выдаёт EXECUTE роли PUBLIC, если
+-- явно не отозвать — тот же класс проблемы, что и 3.7, только в коде,
+-- добавленном сегодня же. Функция RETURNS trigger, поэтому вызвать её
+-- напрямую как RPC невозможно даже с грантом (Postgres такое запрещает
+-- на уровне ядра), но лишний грант — та же лишняя поверхность атаки,
+-- на которую указывает линтер. Отозван EXECUTE у anon/authenticated/
+-- PUBLIC; проверено, что сам триггер при этом продолжает срабатывать
+-- (обычный INSERT в contact_messages как anon всё ещё проходит через
+-- rate-limit и корректно проставляет client_ip).
+--
+-- ОТКАТ
+-- -----
+--   GRANT ALL ON public.payments TO anon, authenticated;
+--   GRANT EXECUTE ON FUNCTION public.publish_ride_free(uuid) TO anon;
+--   GRANT EXECUTE ON FUNCTION public.get_my_profile() TO anon;
+--   GRANT EXECUTE ON FUNCTION public.force_ride_draft() TO anon, authenticated;
+--   GRANT EXECUTE ON FUNCTION public.enforce_contact_rate_limit() TO anon, authenticated;
+-- (делать не следует — это возврат ровно тех дыр, которые здесь закрыты)
+--
+-- Миграция идемпотентна (REVOKE безопасен для уже отсутствующих прав).
+-- ============================================================
+
+REVOKE ALL ON public.payments FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.publish_ride_free(uuid) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.get_my_profile()        FROM anon;
+REVOKE EXECUTE ON FUNCTION public.force_ride_draft()      FROM anon, authenticated, PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.enforce_contact_rate_limit() FROM anon, authenticated, PUBLIC;

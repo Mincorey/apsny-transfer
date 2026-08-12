@@ -6,6 +6,7 @@ import {
   User, MapPin, Calendar, LogIn, Clock,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { parseISODate } from '../lib/utils';
 
 interface PublicUserProfile {
   id: string;
@@ -50,14 +51,6 @@ interface UserReview {
 }
 
 type UserProfileTab = 'rides' | 'reviews';
-
-function formatPhone(raw: string): string {
-  const digits = raw.replace(/\D/g, '');
-  if (!digits) return raw;
-  const d = (digits[0] === '8' ? '7' + digits.slice(1) : digits).slice(0, 11);
-  if (d.length < 11) return '+' + d;
-  return `+${d[0]} (${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7, 9)}-${d.slice(9, 11)}`;
-}
 
 export function UserProfile() {
   const { id } = useParams<{ id: string }>();
@@ -124,8 +117,7 @@ export function UserProfile() {
   }
 
   function formatDate(dateStr: string) {
-    const [y, mo, d] = dateStr.split('-').map(Number);
-    return new Date(y, mo - 1, d).toLocaleDateString('ru-RU', {
+    return parseISODate(dateStr).toLocaleDateString('ru-RU', {
       day: 'numeric', month: 'long', year: 'numeric',
     });
   }

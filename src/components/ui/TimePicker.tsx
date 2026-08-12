@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 
 interface TimePickerProps {
@@ -13,16 +13,16 @@ const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 export function TimePicker({ value, onChange, placeholder = 'Выберите время' }: TimePickerProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const [tempHour, setTempHour] = useState(() => value ? parseInt(value.split(':')[0]) : -1);
+  const [tempHour, setTempHour] = useState(() => value ? parseInt(value.split(':')[0] ?? '0') : -1);
   const [tempMin, setTempMin] = useState(() => {
     if (!value) return -1;
-    return Math.round(parseInt(value.split(':')[1]) / 5) * 5 % 60;
+    return Math.round(parseInt(value.split(':')[1] ?? '0') / 5) * 5 % 60;
   });
 
   useEffect(() => {
     if (open && value) {
-      setTempHour(parseInt(value.split(':')[0]));
-      setTempMin(Math.round(parseInt(value.split(':')[1]) / 5) * 5 % 60);
+      setTempHour(parseInt(value.split(':')[0] ?? '0'));
+      setTempMin(Math.round(parseInt(value.split(':')[1] ?? '0') / 5) * 5 % 60);
     }
   }, [open]);
 

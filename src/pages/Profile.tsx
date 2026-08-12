@@ -49,7 +49,7 @@ function storagePathFromUrl(url: string | null): string | null {
   if (!url) return null;
   const marker = '/avatars/';
   const i = url.indexOf(marker);
-  return i === -1 ? null : url.slice(i + marker.length).split('?')[0];
+  return i === -1 ? null : url.slice(i + marker.length).split('?')[0] ?? null;
 }
 
 interface MyRide {
@@ -258,6 +258,10 @@ export function Profile() {
 
   const handleSaveProfile = async () => {
     if (!profile) return;
+    if (!editData.full_name.trim()) {
+      showToast('error', 'Укажите имя', 'Имя не может быть пустым');
+      return;
+    }
     setSaving(true);
     try {
       const { error } = await supabase.from('users').update({
@@ -427,9 +431,10 @@ export function Profile() {
       if (oldPath) await supabase.storage.from('avatars').remove([oldPath]);
       const rest = vehicles.filter((v) => v.id !== removed.id);
       // Если удалили активное — назначим активным первое из оставшихся
-      if (removed.is_active && rest.length > 0 && !rest.some((v) => v.is_active)) {
-        await supabase.from('vehicles').update({ is_active: true }).eq('id', rest[0].id);
-        rest[0] = { ...rest[0], is_active: true };
+      const first = rest[0];
+      if (removed.is_active && first && !rest.some((v) => v.is_active)) {
+        await supabase.from('vehicles').update({ is_active: true }).eq('id', first.id);
+        rest[0] = { ...first, is_active: true };
       }
       setVehicles(rest);
       setDeleteVehicle(null);
@@ -635,6 +640,7 @@ export function Profile() {
                       value={editData.full_name}
                       onChange={(e) => setEditData({ ...editData, full_name: e.target.value })}
                       className="w-full input-glass px-4 py-2.5 rounded-xl text-sm font-medium"
+                      maxLength={100}
                     />
                   </div>
                   <div>
@@ -644,6 +650,7 @@ export function Profile() {
                       onChange={(e) => setEditData({ ...editData, telegram: applyTelegramMask(e.target.value) })}
                       className="w-full input-glass px-4 py-2.5 rounded-xl text-sm font-medium"
                       placeholder="@username"
+                      maxLength={65}
                     />
                   </div>
                   <div>
@@ -664,6 +671,7 @@ export function Profile() {
                       className="w-full input-glass px-4 py-2.5 rounded-xl text-sm font-medium"
                       placeholder="+79001234567"
                       inputMode="numeric"
+                      maxLength={64}
                     />
                   </div>
 

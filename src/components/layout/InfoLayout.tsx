@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Route, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Footer } from './Footer';
 
 /**

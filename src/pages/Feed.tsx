@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
-  Clock, MapPin, Users, Zap, Search, Star, Car, ChevronRight,
+  Clock, Users, Zap, Search, Star, Car, ChevronRight,
   Timer, ShieldAlert, ArrowUpDown, Route, LogIn, RefreshCw, CreditCard,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -107,7 +107,7 @@ export function Feed({ feedType }: { feedType?: 'offer' | 'request' }) {
       .eq('status', 'draft')
       .order('created_at', { ascending: false })
       .limit(1)
-      .then(({ data }) => setDraftId(data && data.length ? data[0].id : null));
+      .then(({ data }) => setDraftId(data?.[0]?.id ?? null));
   }, [userId]);
 
   const handlePayDraft = () => {

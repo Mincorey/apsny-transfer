@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, Clock, Users, Zap, CheckCircle2, Car, MessageSquare } from 'lucide-react';
+import { MapPin, Calendar, Clock, Zap, CheckCircle2, Car } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DatePicker } from '../components/ui/DatePicker';
 import { TimePicker } from '../components/ui/TimePicker';
 import { useToast } from '../context/ToastContext';
 import { PUBLICATION_PRICE } from '../lib/publishRide';
+import { parseISODate } from '../lib/utils';
 
 const BID_STEPS = [50, 100, 150, 200];
 const AUCTION_DURATIONS = [1, 3, 6, 12, 24];
@@ -106,9 +107,8 @@ export function CreateTrip() {
     );
     if (currentStep === 2) {
       if (!formData.date || !formData.time) return false;
-      const [y, m, d] = formData.date.split('-').map(Number);
       const today = new Date(); today.setHours(0, 0, 0, 0);
-      return new Date(y, m - 1, d) >= today;
+      return parseISODate(formData.date) >= today;
     }
     if (currentStep === 3) return !!(formData.price && parseFloat(formData.price) > 0);
     return true;
@@ -173,8 +173,7 @@ export function CreateTrip() {
 
   const formatDate = (d: string) => {
     if (!d) return '—';
-    const [y, mo, day] = d.split('-').map(Number);
-    return new Date(y, mo - 1, day).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    return parseISODate(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
   const selectedVehicle = vehicles.find((v) => v.id === formData.vehicle_id);
@@ -231,6 +230,7 @@ export function CreateTrip() {
                       className="w-full pl-12 pr-4 py-4 rounded-2xl input-glass text-lg font-medium text-on-surface placeholder:text-outline transition-all"
                       placeholder="Например, Сухум"
                       autoComplete="off"
+                      maxLength={100}
                     />
                   </div>
                 </div>
@@ -248,6 +248,7 @@ export function CreateTrip() {
                       className="w-full pl-12 pr-4 py-4 rounded-2xl input-glass text-lg font-medium text-on-surface placeholder:text-outline transition-all"
                       placeholder="Например, Сочи"
                       autoComplete="off"
+                      maxLength={100}
                     />
                   </div>
                 </div>
@@ -354,6 +355,7 @@ export function CreateTrip() {
                   rows={3}
                   className="w-full px-4 py-4 rounded-2xl input-glass font-medium text-on-surface placeholder:text-outline resize-none transition-all"
                   placeholder="Пожелания, особенности маршрута..."
+                  maxLength={1000}
                 />
               </div>
             </motion.div>

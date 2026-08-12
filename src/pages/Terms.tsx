@@ -1,4 +1,3 @@
-import React from 'react';
 import { InfoLayout, Section } from '../components/layout/InfoLayout';
 import { SITE } from '../lib/siteInfo';
 

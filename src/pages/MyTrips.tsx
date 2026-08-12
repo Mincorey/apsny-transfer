@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, MapPin, Users, Clock, AlertCircle, Trophy, CreditCard, ReceiptText, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PUBLICATION_PRICE } from '../lib/publishRide';
+import { parseISODate } from '../lib/utils';
 
 interface MyTrip {
   id: string;
@@ -50,8 +51,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 function formatDate(dateStr: string): string {
-  const [y, mo, d] = dateStr.split('-').map(Number);
-  return new Date(y, mo - 1, d).toLocaleDateString('ru-RU', {
+  return parseISODate(dateStr).toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'short',
   });

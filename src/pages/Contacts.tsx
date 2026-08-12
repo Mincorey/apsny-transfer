@@ -8,6 +8,10 @@ export function Contacts() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  // Ловушка для ботов: настоящий посетитель это поле не видит и не заполняет.
+  // Простые боты, автозаполняющие все поля формы, впишут туда что-нибудь —
+  // такие сообщения база отклоняет (см. supabase/migrations/20260810_fix_3_4_contact_rate_limit.sql).
+  const [website, setWebsite] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,11 +29,19 @@ export function Contacts() {
         name: name.trim(),
         email: email.trim() || null,
         message: message.trim(),
+        website: website.trim() || null,
       });
       if (insErr) throw insErr;
       setSent(true);
     } catch (err: any) {
-      setError(err.message ?? 'Не удалось отправить сообщение');
+      // Сообщения о превышении лимита (см. миграцию) уже написаны по-русски
+      // и понятны как есть; для прочих ошибок — общий текст.
+      const raw = err?.message ?? '';
+      setError(
+        /слишком много сообщений|форма временно перегружена/i.test(raw)
+          ? raw
+          : 'Не удалось отправить сообщение. Попробуйте ещё раз чуть позже.'
+      );
     } finally {
       setSending(false);
     }
@@ -90,6 +102,19 @@ export function Contacts() {
               maxLength={2000}
               className="w-full px-4 py-3 rounded-xl input-glass text-sm resize-none"
             />
+            {/* Honeypot: скрыто от людей, видно только автозаполняющим ботам. */}
+            <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, overflow: 'hidden' }}>
+              <label htmlFor="website">Оставьте это поле пустым</label>
+              <input
+                id="website"
+                name="website"
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+              />
+            </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <button
               type="submit"

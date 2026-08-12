@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { TopNav } from './TopNav';
@@ -80,7 +80,7 @@ export function MainLayout() {
         showToast(toastTypeMap[n.type] ?? 'info', n.title, n.body ?? undefined);
         if (n.type === 'auction_won') setHasUnreadWon(true);
       }
-      since = data[data.length - 1].created_at;
+      since = data[data.length - 1]?.created_at ?? since;
     };
 
     // Мгновенно догоняем уведомления при возврате на вкладку.

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
   Mail, Lock, Phone, User as UserIcon, ArrowRight, Shield, Route,
-  Zap, TrendingUp, Map, Car, Star, CheckCircle, Clock, Users,
+  Zap, TrendingUp, Map, Car, Star, CheckCircle, Users,
   MapPin, MessageCircle, ChevronRight, Menu, X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -227,6 +227,9 @@ export function Auth() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
+        if (!fullName.trim()) {
+          throw new Error('Укажите имя');
+        }
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -831,6 +834,7 @@ export function Auth() {
                           className="w-full pl-12 pr-4 py-3.5 rounded-xl input-glass text-on-surface placeholder:text-outline font-medium transition-all"
                           placeholder="Иван Иванов"
                           required={!isLogin}
+                          maxLength={100}
                         />
                       </div>
                     </div>
@@ -870,6 +874,7 @@ export function Auth() {
                           onChange={(e) => setTelegram(applyTelegramMask(e.target.value))}
                           className="w-full pl-12 pr-4 py-3.5 rounded-xl input-glass text-on-surface placeholder:text-outline font-medium transition-all"
                           placeholder="@username"
+                          maxLength={65}
                         />
                       </div>
                     </div>
@@ -930,9 +935,16 @@ export function Auth() {
                     className="w-full pl-12 pr-4 py-3.5 rounded-xl input-glass text-on-surface placeholder:text-outline font-medium transition-all"
                     placeholder="••••••••"
                     required
-                    minLength={6}
+                    // Минимум только при регистрации: если сузить его и для входа,
+                    // у существующих пользователей, зарегистрированных раньше при
+                    // старом лимите в 6 символов, браузер откажется отправлять форму
+                    // входа с их же собственным, уже действующим паролем.
+                    minLength={isLogin ? undefined : 8}
                   />
                 </div>
+                {!isLogin && (
+                  <p className="text-xs text-on-surface-variant pl-1">Минимум 8 символов</p>
+                )}
               </div>
 
               <button

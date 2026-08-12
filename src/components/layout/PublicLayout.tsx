@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Route, LogIn, Car, Users } from 'lucide-react';
+import { LogIn, Car, Users } from 'lucide-react';
 import { Footer } from './Footer';
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {

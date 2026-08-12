@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, Printer, ReceiptText, Loader2, AlertCircle } from 'lucide-react';
 import { SITE } from '../lib/siteInfo';
+import { parseISODate } from '../lib/utils';
 
 interface ReceiptData {
   ride_id: string;
@@ -30,8 +31,7 @@ function fmtDateTime(iso: string): string {
 }
 
 function fmtDepart(dateStr: string, timeStr: string): string {
-  const [y, mo, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, mo - 1, d).toLocaleDateString('ru-RU', {
+  const date = parseISODate(dateStr).toLocaleDateString('ru-RU', {
     day: 'numeric', month: 'long', year: 'numeric',
   });
   return `${date}, ${timeStr.slice(0, 5)}`;
@@ -54,7 +54,7 @@ export function Receipt() {
         setPhase('notfound');
         return;
       }
-      setData((rows as ReceiptData[])[0]);
+      setData((rows as ReceiptData[])[0] ?? null);
       setPhase('ready');
     })();
   }, [rideId]);
