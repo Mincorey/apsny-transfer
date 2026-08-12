@@ -65,11 +65,6 @@ export function UserProfile() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
 
-  useEffect(() => {
-    if (!id) return;
-    init();
-  }, [id]);
-
   async function init() {
     const { data: { session } } = await supabase.auth.getSession();
     const viewerId = session?.user?.id ?? null;
@@ -115,6 +110,15 @@ export function UserProfile() {
     // минус два запроса к базе на каждый просмотр профиля.
     setLoading(false);
   }
+
+  // Эффект стоит ПОСЛЕ объявления init намеренно: линтер (react-hooks/
+  // immutability) справедливо ругается на обращение к переменной раньше её
+  // объявления — для function-declaration это работает за счёт подъёма, но
+  // достаточно кому-нибудь заменить function на const, и код молча сломается.
+  useEffect(() => {
+    if (!id) return;
+    init();
+  }, [id]);
 
   function formatDate(dateStr: string) {
     return parseISODate(dateStr).toLocaleDateString('ru-RU', {

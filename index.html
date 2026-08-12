@@ -31,6 +31,31 @@
     <meta name="twitter:description" content="Аукционный сервис поездок по маршрутам Сочи–Абхазия. Торгуйтесь за лучшую цену." />
     <meta name="twitter:image" content="https://apsny-transfer.vercel.app/og-image.png" />
 
+    <!--
+      Канонический адрес страницы.
+
+      Здесь стоит только базовое значение для главной. Прописать сюда один
+      статический адрес и на этом успокоиться НЕЛЬЗЯ: это одностраничное
+      приложение, index.html отдаётся на любой путь, и тогда /trips/123
+      сообщал бы поисковику «моя каноническая версия — главная». Это хуже,
+      чем отсутствие тега вообще: так из индекса выпали бы все внутренние
+      страницы.
+
+      Поэтому href подставляется по текущему адресу — при загрузке скриптом
+      ниже и при каждом переходе внутри приложения (компонент Canonical
+      в src/App.tsx). Адрес берётся из location.origin, а не зашит строкой,
+      чтобы после переезда на свой домен (см. MOVING_CHECKLIST.md) тег
+      не пришлось править.
+    -->
+    <link rel="canonical" href="https://apsny-transfer.vercel.app/" />
+    <script>
+      (function () {
+        var p = location.pathname.replace(/\/+$/, '') || '/';
+        var el = document.querySelector('link[rel="canonical"]');
+        if (el) el.setAttribute('href', location.origin + p);
+      })();
+    </script>
+
     <!-- Favicons -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />

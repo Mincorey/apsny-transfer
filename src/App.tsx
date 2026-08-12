@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Suspense, lazy, useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { MainLayout } from './components/layout/MainLayout';
 import { PublicLayout } from './components/layout/PublicLayout';
@@ -29,6 +29,39 @@ const Privacy = lazy(() => import('./pages/Privacy').then((m) => ({ default: m.P
 const Terms = lazy(() => import('./pages/Terms').then((m) => ({ default: m.Terms })));
 const Offer = lazy(() => import('./pages/Offer').then((m) => ({ default: m.Offer })));
 const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })));
+
+/**
+ * Держит <link rel="canonical"> в актуальном состоянии при переходах.
+ *
+ * В обычном сайте канонический адрес пишется в разметку каждой страницы.
+ * Здесь одностраничное приложение: index.html один на все маршруты, и без
+ * этого компонента тег навсегда остался бы со значением главной — то есть
+ * сообщал бы поисковику, что /trips/123, /about и /offer это одна и та же
+ * страница. Внутренние разделы выпали бы из индекса.
+ *
+ * Адрес берётся из location.origin, а не зашит константой: после переезда
+ * на собственный домен (MOVING_CHECKLIST.md) править ничего не придётся.
+ * Обратная сторона такого решения — если сайт останется доступен сразу по
+ * двум адресам (домен vercel и свой домен), каждый из них будет считать
+ * каноническим себя. На время переезда со старого адреса нужен редирект,
+ * а не два живых зеркала.
+ */
+function Canonical() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const path = pathname.replace(/\/+$/, '') || '/';
+    let el = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!el) {
+      el = document.createElement('link');
+      el.rel = 'canonical';
+      document.head.appendChild(el);
+    }
+    el.href = window.location.origin + path;
+  }, [pathname]);
+
+  return null;
+}
 
 function PageLoader() {
   return (
@@ -65,6 +98,7 @@ export default function App() {
     <ErrorBoundary>
       <ToastProvider>
         <BrowserRouter>
+          <Canonical />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Public standalone routes */}

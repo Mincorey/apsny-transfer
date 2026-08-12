@@ -8,12 +8,17 @@ interface BottomNavProps {
 
 export function BottomNav({ hasUnreadWon = false }: BottomNavProps) {
   return (
-    <div className="glass-panel border-t border-outline-variant/30 px-4 py-5 pb-7 flex justify-around items-center rounded-t-3xl shadow-[0_-8px_32px_rgba(0,0,0,0.4)]">
+    // <nav> вместо <div>: это ориентир для скринридера, по нему можно
+    // перепрыгнуть к меню, не вычитывая всю страницу.
+    <nav
+      aria-label="Основное меню"
+      className="glass-panel border-t border-outline-variant/30 px-4 py-5 pb-7 flex justify-around items-center rounded-t-3xl shadow-[0_-8px_32px_rgba(0,0,0,0.4)]"
+    >
       <NavItem to="/" icon={<LayoutDashboard size={26} />} label="Лента" />
       <NavItem to="/create" icon={<PlusCircle size={34} />} label="Создать" isPrimary />
       <NavItem to="/my-trips" icon={<Briefcase size={26} />} label="Поездки" dot={hasUnreadWon} />
       <NavItem to="/profile" icon={<User size={26} />} label="Профиль" />
-    </div>
+    </nav>
   );
 }
 
@@ -33,9 +38,15 @@ function NavItem({
   dot?: boolean;
 }) {
   return (
+    // aria-label нужен и там, где подпись видна: у «Создать» текст скрыт
+    // совсем (isPrimary), у остальных он набран шрифтом в 9 пикселей внутри
+    // ссылки-иконки. Признак «есть непрочитанное» тоже проговариваем словами —
+    // зелёная точка сама по себе для скринридера не существует.
+    // aria-current="page" для активного пункта NavLink проставляет сам.
     <NavLink
       to={to}
       end={to === '/'}
+      aria-label={dot ? `${label} — есть непрочитанное` : label}
       className={({ isActive }) =>
         isPrimary
           ? 'text-primary-container -mt-7 w-16 h-16 rounded-full border border-primary-container/20 shadow-[0_4px_24px_rgba(0,240,255,0.2)] bg-surface-container flex flex-col items-center justify-center transition-all'

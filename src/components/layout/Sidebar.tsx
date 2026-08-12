@@ -61,6 +61,8 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
           <button
             onClick={onToggle}
             title={isCollapsed ? 'Развернуть меню' : 'Свернуть меню'}
+            aria-label={isCollapsed ? 'Развернуть меню' : 'Свернуть меню'}
+            aria-expanded={!isCollapsed}
             className={`flex items-center gap-3 py-3 text-on-surface-variant hover:text-on-surface transition-colors rounded-xl hover:bg-surface-container-high w-full ${isCollapsed ? 'justify-center px-2' : 'px-4'}`}
           >
             {isCollapsed ? <ChevronRight size={18} /> : (

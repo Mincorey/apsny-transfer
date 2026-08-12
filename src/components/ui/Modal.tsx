@@ -47,9 +47,10 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
                 <h2 className="text-lg font-display font-semibold text-on-surface">{title}</h2>
                 <button
                   onClick={onClose}
+                  aria-label="Закрыть окно"
                   className="text-on-surface-variant hover:text-on-surface transition-colors p-1.5 rounded-lg hover:bg-surface-container-high"
                 >
-                  <X size={18} />
+                  <X size={18} aria-hidden="true" />
                 </button>
               </div>
             )}

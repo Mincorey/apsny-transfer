@@ -45,9 +45,10 @@ export function ToastItem({ type, title, body, onDismiss }: ToastItemProps) {
       </div>
       <button
         onClick={onDismiss}
+        aria-label="Скрыть уведомление"
         className="shrink-0 text-outline hover:text-on-surface transition-colors mt-0.5"
       >
-        <X size={14} />
+        <X size={14} aria-hidden="true" />
       </button>
     </motion.div>
   );

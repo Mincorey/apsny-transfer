@@ -52,7 +52,13 @@ export function PWAInstallPrompt() {
 
     const onInstalled = () => {
       setMode(null);
-      try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch {}
+      try {
+        localStorage.setItem(DISMISS_KEY, String(Date.now()));
+      } catch {
+        // localStorage бывает недоступен: приватный режим Safari, запрет
+        // хранилища в настройках, переполненная квота. Тогда подсказка об
+        // установке просто появится в следующий раз — это не повод падать.
+      }
     };
     window.addEventListener('appinstalled', onInstalled);
 
@@ -65,13 +71,23 @@ export function PWAInstallPrompt() {
 
   const close = () => {
     setMode(null);
-    try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch {}
+    try {
+      localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    } catch {
+      // См. комментарий выше: без localStorage подсказка просто вернётся
+      // при следующем заходе. Это не ошибка, ронять интерфейс не за что.
+    }
   };
 
   const installAndroid = async () => {
     if (!deferred) return;
     deferred.prompt();
-    try { await deferred.userChoice; } catch {}
+    try {
+      await deferred.userChoice;
+    } catch {
+      // Пользователь мог закрыть системное окно установки — браузер в этом
+      // случае отклоняет промис. Реакция одна и та же: убрать подсказку.
+    }
     setDeferred(null);
     close();
   };

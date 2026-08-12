@@ -60,6 +60,7 @@ export function ReviewModal({ rideId, targetId, targetName, onClose, onDone }: R
       >
         <button
           onClick={onClose}
+          aria-label="Закрыть окно отзыва"
           className="absolute top-4 right-4 p-1.5 rounded-xl text-outline hover:text-on-surface hover:bg-white/5 transition-all"
         >
           <X size={18} />

@@ -84,14 +84,16 @@ pg_restore -d postgres --no-owner --no-privileges apsny_2026-08-10.dump
 | Файл | Что менять |
 |---|---|
 | `.env` | `VITE_SUPABASE_URL` → `https://api.<домен>`, `VITE_SUPABASE_ANON_KEY` → новый ключ |
-| `.env.example` | то же, заглушками; заодно убрать реальный номер кошелька |
-| `index.html` | 5 абсолютных URL `https://apsny-transfer.vercel.app` в OG- и Twitter-тегах |
+| `.env.example` | ~~убрать реальный номер кошелька~~ — сделано 12.08.2026, стоит заглушка |
+| `index.html` | 5 абсолютных URL `https://apsny-transfer.vercel.app` в OG- и Twitter-тегах. **Тег `canonical` править не нужно** — он с 12.08.2026 подставляется по текущему адресу |
 | `public/sitemap.xml` | 9 URL со старым доменом |
 | `public/robots.txt` | строка `Sitemap:` |
-| `vercel.json` | удалить, заменить конфигом nginx |
-| `package.json` | заодно переименовать с `react-example` на `apsny-transfer` |
+| `vercel.json` | удалить, заменить конфигом nginx. **Перенести заголовки безопасности** — с 12.08.2026 они заданы здесь, в конфиге nginx ниже они уже учтены |
+| **CSP** | В `vercel.json` политика содержит домен Supabase (`uprcnpgmmnvsoxasuhun.supabase.co`) в `connect-src` и `img-src`. При переезде **обязательно заменить на новый адрес**, иначе браузер заблокирует все запросы к базе и сайт перестанет работать. Политика пока в режиме `Report-Only` — порядок включения в `ПРОВЕРИТЬ.md`, раздел C2 |
+| ~~`package.json`~~ | ~~переименовать с `react-example`~~ — сделано 12.08.2026 |
 | Кабинет ЮMoney | новый URL вебхука |
 | Supabase Auth | Site URL и Redirect URLs на новый домен |
+| Edge Function | Развернуть `yoomoney-webhook` заново (**версия 5** от 12.08.2026, `verify_jwt: false`) и **перенести секрет `YOOMONEY_NOTIFICATION_SECRET`** — без него функция с версии 5 честно отвечает 500 и пишет в Telegram, а не молчит |
 
 ---
 

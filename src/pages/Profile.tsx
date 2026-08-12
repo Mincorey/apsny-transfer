@@ -135,10 +135,6 @@ export function Profile() {
   const [deleting, setDeleting] = useState(false);
   const atVehicleLimit = vehicles.length >= MAX_VEHICLES;
 
-  useEffect(() => {
-    fetchAll();
-  }, []);
-
   const fetchRatings = async () => {
     if (ratingsLoaded.current) return;
     ratingsLoaded.current = true;
@@ -202,6 +198,14 @@ export function Profile() {
       setLoading(false);
     }
   };
+
+  // Эффект стоит ПОСЛЕ объявления fetchAll намеренно. fetchAll — это const,
+  // то есть до этой строки переменная в «мёртвой зоне»: сейчас всё работает
+  // только потому, что эффект выполняется после первого рендера. Линтер
+  // (react-hooks/immutability) на такое обращение ругается справедливо.
+  useEffect(() => {
+    fetchAll();
+  }, []);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1381,9 +1385,19 @@ function PrivacyToggle({
   return (
     <div className="flex items-center justify-between py-1.5">
       <span className="text-sm font-medium">{label}</span>
+      {/*
+        Переключатель нарисован из div-ов, поэтому скринридер сам по себе не
+        понимает ни что это выключатель, ни включён он или нет: внутри кнопки
+        нет ни текста, ни иконки — только цветной кружок. role="switch"
+        объявляет тип элемента, aria-checked передаёт состояние, aria-label
+        связывает его с подписью слева.
+      */}
       <button
         type="button"
         onClick={onToggle}
+        role="switch"
+        aria-checked={value}
+        aria-label={label}
         className={`w-11 h-6 rounded-full transition-all relative shrink-0 ${
           value ? 'bg-[#00f0ff]' : 'bg-outline-variant/40'
         }`}

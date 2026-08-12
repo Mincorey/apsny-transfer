@@ -84,12 +84,12 @@ export function DatePicker({ value, onChange, placeholder = 'Выберите д
             className="absolute left-0 z-50 mt-2 w-[300px] max-w-[calc(100vw-2rem)] rounded-2xl p-4 border border-[#00f0ff]/20 shadow-2xl bg-surface-container/95 backdrop-blur-md"
           >
             <div className="flex items-center justify-between mb-3">
-              <button type="button" onClick={prevMonth} className="p-1.5 rounded-xl hover:bg-white/10 transition-colors">
-                <ChevronLeft size={16} className="text-on-surface-variant" />
+              <button type="button" onClick={prevMonth} aria-label="Предыдущий месяц" className="p-1.5 rounded-xl hover:bg-white/10 transition-colors">
+                <ChevronLeft size={16} aria-hidden="true" className="text-on-surface-variant" />
               </button>
               <span className="text-sm font-bold">{MONTHS_RU[viewMonth]} {viewYear}</span>
-              <button type="button" onClick={nextMonth} className="p-1.5 rounded-xl hover:bg-white/10 transition-colors">
-                <ChevronRight size={16} className="text-on-surface-variant" />
+              <button type="button" onClick={nextMonth} aria-label="Следующий месяц" className="p-1.5 rounded-xl hover:bg-white/10 transition-colors">
+                <ChevronRight size={16} aria-hidden="true" className="text-on-surface-variant" />
               </button>
             </div>
 
