@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, User, LogOut, Trophy, Briefcase } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, User, LogOut, Trophy, Briefcase, Bell } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { LogoutModal } from './Sidebar';
 
 interface TopNavProps {
   hasUnreadWon?: boolean;
+  unreadNotifications?: number;
 }
 
-export function TopNav({ hasUnreadWon = false }: TopNavProps) {
+export function TopNav({ hasUnreadWon = false, unreadNotifications = 0 }: TopNavProps) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   return (
@@ -25,6 +26,7 @@ export function TopNav({ hasUnreadWon = false }: TopNavProps) {
           <nav className="flex items-center justify-center gap-0.5">
             <NavItem to="/" icon={<LayoutDashboard size={18} />} label="Лента" />
             <NavItem to="/create" icon={<PlusCircle size={18} />} label="Создать" />
+            <NavItem to="/notifications" icon={<Bell size={18} />} label="Уведомления" badge={unreadNotifications} />
             <NavItem to="/my-trips" icon={<Briefcase size={18} />} label="Поездки" dotBadge={hasUnreadWon} />
             <NavItem to="/ratings" icon={<Trophy size={18} />} label="Рейтинги" />
             <NavItem to="/profile" icon={<User size={18} />} label="Профиль" />
@@ -68,6 +70,9 @@ function NavItem({
       to={to}
       end={to === '/'}
       title={label}
+      // Подпись видна только на широких экранах (класс xl:inline), на средних
+      // остаётся голая иконка — поэтому имя пункта проговариваем всегда.
+      aria-label={badge > 0 ? `${label} — непрочитанных: ${badge}` : label}
       className={({ isActive }) =>
         `flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
           isActive

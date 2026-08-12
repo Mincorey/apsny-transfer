@@ -20,6 +20,7 @@ const TripDetail = lazy(() => import('./pages/TripDetail').then((m) => ({ defaul
 const UserProfile = lazy(() => import('./pages/UserProfile').then((m) => ({ default: m.UserProfile })));
 const Ratings = lazy(() => import('./pages/Ratings').then((m) => ({ default: m.Ratings })));
 const MyTrips = lazy(() => import('./pages/MyTrips').then((m) => ({ default: m.MyTrips })));
+const Notifications = lazy(() => import('./pages/Notifications').then((m) => ({ default: m.Notifications })));
 const About = lazy(() => import('./pages/About').then((m) => ({ default: m.About })));
 const Payment = lazy(() => import('./pages/Payment').then((m) => ({ default: m.Payment })));
 const Receipt = lazy(() => import('./pages/Receipt').then((m) => ({ default: m.Receipt })));
@@ -159,6 +160,7 @@ export default function App() {
                 <Route path="/users/:id" element={<UserProfile />} />
                 <Route path="/ratings" element={<Ratings />} />
                 <Route path="/my-trips" element={<MyTrips />} />
+                <Route path="/notifications" element={<Notifications />} />
               </Route>
 
               {/* 404 for all unmatched paths */}

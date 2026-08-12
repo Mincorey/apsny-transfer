@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { TopNav } from './TopNav';
@@ -25,6 +25,14 @@ export function MainLayout() {
   const { showToast } = useToast();
   const location = useLocation();
   const [hasUnreadWon, setHasUnreadWon] = useState(false);
+  // Счётчик непрочитанных для значка на пункте «Уведомления».
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  // Текущий адрес, доступный изнутри опроса уведомлений. Опрос заводится один
+  // раз и живёт всё время, поэтому обычную переменную он бы «запомнил» такой,
+  // какой она была в момент запуска, и навсегда считал бы, что мы на той же
+  // странице. Ссылка обновляется при каждом переходе и всегда актуальна.
+  const pathRef = useRef(location.pathname);
+  useEffect(() => { pathRef.current = location.pathname; }, [location.pathname]);
 
   // Check for unread auction_won notifications on mount
   useEffect(() => {
@@ -37,8 +45,22 @@ export function MainLayout() {
         .eq('type', 'auction_won')
         .eq('is_read', false);
       if ((count ?? 0) > 0) setHasUnreadWon(true);
+
+      const { count: total } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .eq('is_read', false);
+      setUnreadNotifications(total ?? 0);
     });
   }, []);
+
+  // Открыли страницу уведомлений — значок гасим сразу. Отметку «прочитано»
+  // в базе ставит сама страница кнопкой «Прочитать все»; здесь только цифра
+  // на иконке, чтобы она не висела после того, как человек всё просмотрел.
+  useEffect(() => {
+    if (location.pathname === '/notifications') setUnreadNotifications(0);
+  }, [location.pathname]);
 
   // Clear dot and mark as read when user opens My Trips
   useEffect(() => {
@@ -79,6 +101,7 @@ export function MainLayout() {
       for (const n of data as { type: NotificationType; title: string; body?: string | null; created_at: string }[]) {
         showToast(toastTypeMap[n.type] ?? 'info', n.title, n.body ?? undefined);
         if (n.type === 'auction_won') setHasUnreadWon(true);
+        if (pathRef.current !== '/notifications') setUnreadNotifications(c => c + 1);
       }
       since = data[data.length - 1]?.created_at ?? since;
     };
@@ -104,7 +127,7 @@ export function MainLayout() {
 
   return (
     <div className="h-screen overflow-hidden bg-background">
-      <TopNav hasUnreadWon={hasUnreadWon} />
+      <TopNav hasUnreadWon={hasUnreadWon} unreadNotifications={unreadNotifications} />
 
       <main className="h-full overflow-y-auto w-full md:pt-16">
         <div className="max-w-4xl mx-auto w-full md:p-8 p-4 pb-32 md:pb-8">
@@ -125,7 +148,7 @@ export function MainLayout() {
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
-        <BottomNav hasUnreadWon={hasUnreadWon} />
+        <BottomNav hasUnreadWon={hasUnreadWon} unreadNotifications={unreadNotifications} />
       </div>
     </div>
   );
