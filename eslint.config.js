@@ -78,4 +78,17 @@ export default tseslint.config(
       globals: globals.node,
     },
   },
+  {
+    // Обычные браузерные скрипты из public/ (например canonical.js): Vite их
+    // не собирает, они подключаются тегом <script> как есть — значит это не
+    // модули, и им нужны браузерные глобальные объекты (location, document).
+    // sw.js сюда не попадает: он в ignores, потому что живёт в окружении
+    // service worker со своим набором глобальных объектов.
+    files: ['public/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'script',
+      globals: globals.browser,
+    },
+  },
 );

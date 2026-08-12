@@ -42,19 +42,16 @@
       страницы.
 
       Поэтому href подставляется по текущему адресу — при загрузке скриптом
-      ниже и при каждом переходе внутри приложения (компонент Canonical
-      в src/App.tsx). Адрес берётся из location.origin, а не зашит строкой,
-      чтобы после переезда на свой домен (см. MOVING_CHECKLIST.md) тег
-      не пришлось править.
+      /canonical.js и при каждом переходе внутри приложения (компонент
+      Canonical в src/App.tsx). Адрес берётся из location.origin, а не зашит
+      строкой, чтобы после переезда на свой домен (см. MOVING_CHECKLIST.md)
+      тег не пришлось править.
+
+      Скрипт вынесен в отдельный файл, а не написан инлайном, чтобы в CSP
+      можно было обойтись без script-src 'unsafe-inline' (см. vercel.json).
     -->
     <link rel="canonical" href="https://apsny-transfer.vercel.app/" />
-    <script>
-      (function () {
-        var p = location.pathname.replace(/\/+$/, '') || '/';
-        var el = document.querySelector('link[rel="canonical"]');
-        if (el) el.setAttribute('href', location.origin + p);
-      })();
-    </script>
+    <script src="/canonical.js" defer></script>
 
     <!-- Favicons -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
