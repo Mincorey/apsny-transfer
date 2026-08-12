@@ -48,7 +48,17 @@ export function ReviewModal({ rideId, targetId, targetName, onClose, onDone }: R
       setSuccess(true);
       setTimeout(onDone, 1500);
     } catch (err: any) {
-      setError(err.message ?? 'Ошибка при отправке отзыва');
+      // База защищена от повторного отзыва об одной и той же поездке — это
+      // правильно, иначе рейтинг можно было бы накрутить. Но отказ она
+      // формулирует по-своему: «duplicate key value violates unique
+      // constraint "reviews_..."». Показывать такое человеку нельзя — он не
+      // поймёт ни слова и решит, что сайт сломался. Переводим на русский.
+      const raw = String(err?.message ?? '');
+      setError(
+        /duplicate key|unique constraint/i.test(raw)
+          ? 'Вы уже оставляли отзыв об этой поездке.'
+          : raw || 'Не удалось отправить отзыв. Попробуйте ещё раз.'
+      );
     } finally {
       setLoading(false);
     }
