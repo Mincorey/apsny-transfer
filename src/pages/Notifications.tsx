@@ -100,6 +100,19 @@ export function Notifications() {
     setMarking(false);
   }
 
+  // Открытое уведомление гасим сразу: раньше счётчик и бейдж в шапке висели
+  // вечно, если человек читал уведомления по одному, а не кнопкой «Прочитать все».
+  const markOneRead = useCallback(async (id: string) => {
+    setItems(prev => prev.map(n => (n.id === id ? { ...n, is_read: true } : n)));
+    const { error: err } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', id)
+      .eq('is_read', false);
+    // Если запись не прошла — возвращаем метку, чтобы интерфейс не врал.
+    if (err) setItems(prev => prev.map(n => (n.id === id ? { ...n, is_read: false } : n)));
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -188,10 +201,27 @@ export function Notifications() {
             return (
               <li key={n.id}>
                 {/* Уведомления о поездке ведут на её карточку; те, что без
-                    поездки (например, отзыв), остаются просто записью. */}
-                {n.ride_id
-                  ? <Link to={`/trips/${n.ride_id}`} className="block rounded-2xl outline-offset-2">{Card}</Link>
-                  : Card}
+                    поездки (например, отзыв), можно только отметить прочитанными. */}
+                {n.ride_id ? (
+                  <Link
+                    to={`/trips/${n.ride_id}`}
+                    onClick={() => { if (!n.is_read) markOneRead(n.id); }}
+                    className="block rounded-2xl outline-offset-2"
+                  >
+                    {Card}
+                  </Link>
+                ) : !n.is_read ? (
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Отметить прочитанным: ${n.title}`}
+                    onClick={() => markOneRead(n.id)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); markOneRead(n.id); } }}
+                    className="block rounded-2xl outline-offset-2 cursor-pointer"
+                  >
+                    {Card}
+                  </div>
+                ) : Card}
               </li>
             );
           })}

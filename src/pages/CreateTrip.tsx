@@ -7,7 +7,7 @@ import { DatePicker } from '../components/ui/DatePicker';
 import { TimePicker } from '../components/ui/TimePicker';
 import { useToast } from '../context/ToastContext';
 import { PUBLICATION_PRICE } from '../lib/publishRide';
-import { parseISODate } from '../lib/utils';
+import { parseISODate, plural, pluralSeats } from '../lib/utils';
 
 const BID_STEPS = [50, 100, 150, 200];
 const AUCTION_DURATIONS = [1, 3, 6, 12, 24];
@@ -323,7 +323,7 @@ export function CreateTrip() {
                   ><span aria-hidden="true">−</span></button>
                   <div className="flex-1 text-center" role="status">
                     <span className="text-2xl font-bold">{formData.seats}</span>
-                    <span className="text-sm text-on-surface-variant ml-2">{formData.seats === 1 ? 'место' : formData.seats < 5 ? 'места' : 'мест'}</span>
+                    <span className="text-sm text-on-surface-variant ml-2">{plural(formData.seats, 'место', 'места', 'мест')}</span>
                   </div>
                   <button
                     type="button"
@@ -467,7 +467,7 @@ export function CreateTrip() {
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-on-surface-variant">{v.license_plate} · {v.capacity} мест</div>
+                            <div className="text-xs text-on-surface-variant">{v.license_plate} · {pluralSeats(v.capacity)}</div>
                           </div>
                           {formData.vehicle_id === v.id && <CheckCircle2 size={18} className="text-[#00f0ff] ml-auto shrink-0" />}
                         </button>

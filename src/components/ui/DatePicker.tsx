@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import { useDropdownPlacement } from './useDropdownPlacement';
 
 interface DatePickerProps {
   value: string; // YYYY-MM-DD
@@ -39,6 +40,8 @@ export function DatePicker({ value, onChange, placeholder = 'Выберите д
   const [viewMonth, setViewMonth] = useState(initDate.getMonth());
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const placement = useDropdownPlacement(open, ref, panelRef);
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -88,11 +91,18 @@ export function DatePicker({ value, onChange, placeholder = 'Выберите д
       <AnimatePresence>
         {open && (
           <motion.div
+            ref={panelRef}
             initial={{ opacity: 0, y: 6, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.98 }}
             transition={{ duration: 0.14 }}
-            className="absolute left-0 z-50 mt-2 w-[300px] max-w-[calc(100vw-2rem)] rounded-2xl p-4 border border-[#00f0ff]/20 shadow-2xl bg-surface-container/95 backdrop-blur-md"
+            // Фон сплошной: при полупрозрачном сквозь календарь читался блок
+            // «Удобства в поездке» и числа месяца мешались с надписями.
+            className={[
+              'absolute left-0 z-50 w-[300px] max-w-[calc(100vw-2rem)] rounded-2xl p-4',
+              'border border-[#00f0ff]/20 shadow-2xl bg-surface-container-high backdrop-blur-md',
+              placement === 'top' ? 'bottom-full mb-2' : 'top-full mt-2',
+            ].join(' ')}
           >
             <div className="flex items-center justify-between mb-3">
               <button type="button" onClick={prevMonth} aria-label="Предыдущий месяц" className="p-1.5 rounded-xl hover:bg-white/10 transition-colors">

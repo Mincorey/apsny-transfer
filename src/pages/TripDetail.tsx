@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ReviewModal } from '../components/ui/ReviewModal';
-import { parseISODate } from '../lib/utils';
+import { parseISODate, pluralSeats } from '../lib/utils';
 import { Modal } from '../components/ui/Modal';
 import { Footer } from '../components/layout/Footer';
 import { useToast } from '../context/ToastContext';
@@ -622,10 +622,7 @@ export function TripDetail() {
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Users size={14} className="text-[#00f0ff] shrink-0" />
-              <span>
-                {ride.seats}{' '}
-                {ride.seats === 1 ? 'место' : ride.seats < 5 ? 'места' : 'мест'}
-              </span>
+              <span>{pluralSeats(ride.seats)}</span>
             </div>
             {ride.amenities && ride.amenities.length > 0 && (
               <div className="mt-3 pt-3 border-t border-outline-variant/30">

@@ -18,6 +18,8 @@ interface MyTrip {
   created_at: string;
   bids_count?: number;
   seats?: number;
+  /** true только если по поездке есть проведённый платёж (payments.status = 'paid'). */
+  has_receipt?: boolean;
 }
 
 type TripsTab = 'active' | 'completed' | 'won';
@@ -91,7 +93,10 @@ function TripCard({
   const statusColor = STATUS_COLORS[trip.status] || 'bg-surface-container-high text-on-surface';
   const statusLabel = STATUS_LABELS[trip.status] || trip.status;
   const isDraft = trip.status === 'draft';
-  const isPaid = trip.status !== 'draft' && trip.status !== 'cancelled';
+  // Квитанция существует только при реальном платеже. Раньше здесь стоял статус
+  // поездки — из-за этого кнопка показывалась и у бесплатных публикаций и вела
+  // на заглушку «Квитанция не найдена».
+  const hasReceipt = trip.has_receipt === true;
 
   return (
     <motion.button
@@ -135,7 +140,7 @@ function TripCard({
           {/* Bids and price */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-on-surface">{trip.current_price} ₽</span>
-            {trip.bids_count && trip.bids_count > 0 && (
+            {!!trip.bids_count && trip.bids_count > 0 && (
               <span className="text-xs bg-primary-container/20 text-primary-container px-2 py-1 rounded-md">
                 {trip.bids_count} {trip.bids_count === 1 ? 'ставка' : trip.bids_count < 5 ? 'ставки' : 'ставок'}
               </span>
@@ -210,7 +215,7 @@ function TripCard({
         </>
       )}
 
-      {isPaid && (
+      {hasReceipt && (
         <div
           role="button"
           tabIndex={0}
@@ -333,9 +338,15 @@ export function MyTrips() {
         return acc;
       }, {});
 
+      // Поездки, по которым есть проведённый платёж, — только у них показываем
+      // кнопку квитанции. Таблица payments закрыта RLS, читаем через RPC.
+      const { data: paidRows } = await supabase.rpc('list_paid_ride_ids');
+      const paidSet = new Set<string>((paidRows as string[] | null) ?? []);
+
       const tripsWithBids = ridesData.map(ride => ({
         ...ride,
         bids_count: countMap[ride.id] || 0,
+        has_receipt: paidSet.has(ride.id),
       }));
 
       setTrips(tripsWithBids as MyTrip[]);

@@ -45,21 +45,26 @@ export function MainLayout() {
         .eq('type', 'auction_won')
         .eq('is_read', false);
       if ((count ?? 0) > 0) setHasUnreadWon(true);
+    });
+  }, []);
 
-      const { count: total } = await supabase
+  // Значок показывает настоящее число непрочитанных. Раньше он просто обнулялся
+  // при заходе на страницу уведомлений — цифра исчезала, а после перезагрузки
+  // возвращалась, потому что в базе ничего не менялось. Теперь пересчитываем
+  // на каждом переходе: страница уведомлений гасит записи по клику и кнопкой
+  // «Прочитать все», а сюда приходит уже честный итог.
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (cancelled || !session?.user) return;
+      const { count } = await supabase
         .from('notifications')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', session.user.id)
         .eq('is_read', false);
-      setUnreadNotifications(total ?? 0);
+      if (!cancelled) setUnreadNotifications(count ?? 0);
     });
-  }, []);
-
-  // Открыли страницу уведомлений — значок гасим сразу. Отметку «прочитано»
-  // в базе ставит сама страница кнопкой «Прочитать все»; здесь только цифра
-  // на иконке, чтобы она не висела после того, как человек всё просмотрел.
-  useEffect(() => {
-    if (location.pathname === '/notifications') setUnreadNotifications(0);
+    return () => { cancelled = true; };
   }, [location.pathname]);
 
   // Clear dot and mark as read when user opens My Trips

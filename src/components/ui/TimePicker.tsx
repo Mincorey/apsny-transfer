@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { useDropdownPlacement } from './useDropdownPlacement';
 
 interface TimePickerProps {
   value: string; // HH:MM
@@ -16,6 +17,8 @@ const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 export function TimePicker({ value, onChange, placeholder = 'Выберите время', id }: TimePickerProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const placement = useDropdownPlacement(open, ref, panelRef);
   const [tempHour, setTempHour] = useState(() => value ? parseInt(value.split(':')[0] ?? '0') : -1);
   const [tempMin, setTempMin] = useState(() => {
     if (!value) return -1;
@@ -76,11 +79,18 @@ export function TimePicker({ value, onChange, placeholder = 'Выберите в
       <AnimatePresence>
         {open && (
           <motion.div
+            ref={panelRef}
             initial={{ opacity: 0, y: 6, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.98 }}
             transition={{ duration: 0.14 }}
-            className="absolute right-0 z-50 mt-2 w-[300px] max-w-[calc(100vw-2rem)] rounded-2xl p-4 border border-[#7701d0]/30 shadow-2xl bg-surface-container/95 backdrop-blur-md"
+            // Фон сплошной: при полупрозрачном сквозь панель читался блок
+            // «Удобства в поездке» и цифры часов мешались с надписями.
+            className={[
+              'absolute right-0 z-50 w-[300px] max-w-[calc(100vw-2rem)] rounded-2xl p-4',
+              'border border-[#7701d0]/30 shadow-2xl bg-surface-container-high backdrop-blur-md',
+              placement === 'top' ? 'bottom-full mb-2' : 'top-full mt-2',
+            ].join(' ')}
           >
             <div className="space-y-3">
               <div>

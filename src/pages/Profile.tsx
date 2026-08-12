@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { LogoutModal } from '../components/layout/Sidebar';
 import { Modal } from '../components/ui/Modal';
 import { normalizeWaDigits, waDisplay } from '../lib/contacts';
+import { pluralSeats } from '../lib/utils';
 
 interface UserProfile {
   id: string;
@@ -1253,7 +1254,7 @@ export function Profile() {
                               <span className="uppercase tracking-wider font-mono text-xs px-2 py-0.5 bg-surface-container rounded text-on-surface">
                                 {vehicle.license_plate}
                               </span>
-                              <span className="text-sm text-on-surface-variant">{vehicle.capacity} мест</span>
+                              <span className="text-sm text-on-surface-variant">{pluralSeats(vehicle.capacity)}</span>
                             </div>
                           </div>
                           <button
