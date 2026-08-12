@@ -493,7 +493,7 @@ export function TripDetail() {
           ) : !isAuthenticated ? (
             <div className="h-16 flex items-center justify-center md:justify-end gap-3 w-full">
               <a
-                href="/login"
+                href="/"
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-[#00f0ff]/40 text-[#00f0ff] bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 transition-all"
               >
                 <LogIn size={13} />
@@ -717,6 +717,7 @@ export function TripDetail() {
                 <div className="relative w-full">
                   <input
                     type="number"
+                    aria-label={`${isRequest ? 'Снижение' : 'Надбавка'} к текущей цене в рублях, минимум ${minBidStep}`}
                     value={bidDelta}
                     onChange={(e) => { setBidDelta(e.target.value); setErrorMsg(null); }}
                     className="w-full pl-4 pr-8 py-3 rounded-xl input-glass text-sm"
@@ -762,7 +763,7 @@ export function TripDetail() {
           {!isAuthenticated && (
             <div className="pt-2 border-t border-outline-variant/30">
               <a
-                href="/login"
+                href="/"
                 className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-[#00f0ff]/30 text-[#00f0ff] text-sm font-semibold hover:bg-[#00f0ff]/10 transition-colors"
               >
                 <LogIn size={15} />
@@ -953,7 +954,7 @@ export function TripDetail() {
       </main>
 
       {/* Bid confirmation modal */}
-      <Modal open={showBidConfirmModal} onClose={() => { setShowBidConfirmModal(false); setPendingBidAmount(null); setErrorMsg(null); }} size="sm">
+      <Modal open={showBidConfirmModal} onClose={() => { setShowBidConfirmModal(false); setPendingBidAmount(null); setErrorMsg(null); }} size="sm" label="Подтвердите ставку">
         <div className="flex flex-col items-center text-center gap-4">
           <div className="w-16 h-16 rounded-full bg-[#00f0ff]/10 border border-[#00f0ff]/25 flex items-center justify-center shadow-[0_0_24px_rgba(0,240,255,0.15)]">
             <Trophy size={28} className="text-[#00f0ff]" />
@@ -1008,7 +1009,7 @@ export function TripDetail() {
       </AnimatePresence>
 
       {/* Cancel ride confirmation */}
-      <Modal open={showCancelModal} onClose={() => setShowCancelModal(false)} size="sm">
+      <Modal open={showCancelModal} onClose={() => setShowCancelModal(false)} size="sm" label="Отменить поездку?">
         <div className="flex flex-col items-center text-center gap-4">
           <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/25 flex items-center justify-center shadow-[0_0_24px_rgba(239,68,68,0.15)]">
             <XIcon size={28} className="text-red-400" />

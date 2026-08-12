@@ -140,7 +140,7 @@ export function About() {
       </Section>
 
       <div className="pt-2">
-        <Link to="/login" className="inline-flex px-6 py-3 rounded-xl btn-mesh font-bold text-white">
+        <Link to="/" className="inline-flex px-6 py-3 rounded-xl btn-mesh font-bold text-white">
           Начать — это бесплатно
         </Link>
       </div>

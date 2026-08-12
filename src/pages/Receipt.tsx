@@ -74,7 +74,7 @@ export function Receipt() {
           <AlertCircle size={40} className="text-on-surface-variant mx-auto" />
           <h1 className="text-xl font-bold">Нужен вход</h1>
           <p className="text-on-surface-variant text-sm">Квитанция доступна только владельцу поездки.</p>
-          <button onClick={() => navigate('/login')} className="px-6 py-3 rounded-xl btn-mesh font-bold text-white">
+          <button onClick={() => navigate('/')} className="px-6 py-3 rounded-xl btn-mesh font-bold text-white">
             Войти
           </button>
         </div>

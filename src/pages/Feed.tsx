@@ -236,7 +236,7 @@ export function Feed({ feedType }: { feedType?: 'offer' | 'request' }) {
           </button>
           {!isAuthenticated && (
             <a
-              href="/login"
+              href="/"
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-[#00f0ff]/40 text-[#00f0ff] bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 transition-all"
             >
               <LogIn size={15} />
@@ -314,9 +314,10 @@ export function Feed({ feedType }: { feedType?: 'offer' | 'request' }) {
 
         <div className="flex flex-1 gap-3 w-full">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none" aria-hidden="true" />
             <input
-              type="text"
+              type="search"
+              aria-label="Поиск по маршруту"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 rounded-xl input-glass text-sm text-on-surface placeholder:text-outline"
@@ -325,8 +326,9 @@ export function Feed({ feedType }: { feedType?: 'offer' | 'request' }) {
           </div>
 
           <div className="relative">
-            <ArrowUpDown size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none" />
+            <ArrowUpDown size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none" aria-hidden="true" />
             <select
+              aria-label="Порядок сортировки"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortKey)}
               className="pl-8 pr-3 py-2 rounded-xl input-glass text-sm text-on-surface appearance-none cursor-pointer"
@@ -632,7 +634,7 @@ function RideCard({
       {!isCancelled && (
         !isAuthenticated ? (
           <a
-            href="/login"
+            href="/"
             onClick={(e) => e.stopPropagation()}
             className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-[#00f0ff]/30 text-[#00f0ff] text-sm font-semibold hover:bg-[#00f0ff]/10 transition-colors"
           >

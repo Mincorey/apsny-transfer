@@ -216,14 +216,15 @@ export function CreateTrip() {
                 <div className="absolute left-6 top-8 bottom-[3.5rem] w-0.5 bg-outline-variant/30 z-0" />
 
                 <div className="space-y-1 relative z-10">
-                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Пункт отправления</label>
+                  <label htmlFor="trip-origin" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Пункт отправления</label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none" aria-hidden="true">
                       <div className="w-4 h-4 rounded-full border-2 border-primary-container bg-surface flex items-center justify-center">
                         <div className="w-1.5 h-1.5 rounded-full bg-primary-container" />
                       </div>
                     </div>
                     <input
+                      id="trip-origin"
                       type="text"
                       value={formData.origin}
                       onChange={e => setFormData({ ...formData, origin: e.target.value })}
@@ -236,12 +237,13 @@ export function CreateTrip() {
                 </div>
 
                 <div className="space-y-1 relative z-10">
-                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Пункт назначения</label>
+                  <label htmlFor="trip-destination" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Пункт назначения</label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none" aria-hidden="true">
                       <div className="w-4 h-4 rounded-full border-2 border-secondary-container bg-surface" />
                     </div>
                     <input
+                      id="trip-destination"
                       type="text"
                       value={formData.destination}
                       onChange={e => setFormData({ ...formData, destination: e.target.value })}
@@ -280,56 +282,75 @@ export function CreateTrip() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Дата</label>
+                  <label htmlFor="trip-date" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Дата</label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10" aria-hidden="true">
                       <Calendar size={18} className="text-primary-container" />
                     </div>
-                    <DatePicker value={formData.date} onChange={d => setFormData({ ...formData, date: d })} placeholder="ДД.ММ.ГГГГ" />
+                    <DatePicker id="trip-date" value={formData.date} onChange={d => setFormData({ ...formData, date: d })} placeholder="ДД.ММ.ГГГГ" />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Время</label>
+                  <label htmlFor="trip-time" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Время</label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10" aria-hidden="true">
                       <Clock size={18} className="text-primary-container" />
                     </div>
-                    <TimePicker value={formData.time} onChange={t => setFormData({ ...formData, time: t })} placeholder="--:--" />
+                    <TimePicker id="trip-time" value={formData.time} onChange={t => setFormData({ ...formData, time: t })} placeholder="--:--" />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Количество мест</label>
-                <div className="flex items-center gap-3">
+                {/*
+                  Счётчик мест. Поля ввода здесь нет — только две кнопки и
+                  число между ними, — поэтому подпись сделана обычным <span>,
+                  а группа ссылается на неё через aria-labelledby.
+                  role="status" на самом числе нужен, чтобы новое значение
+                  проговаривалось вслух после нажатия: иначе незрячий человек
+                  жмёт «плюс» и не получает никакого подтверждения, что что-то
+                  изменилось. Символ «−» на кнопке — это математический минус,
+                  скринридер читает его невнятно, поэтому у обеих кнопок стоит
+                  словесная подпись, а сам знак скрыт через aria-hidden.
+                */}
+                <span id="trip-seats-label" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1 block">Количество мест</span>
+                <div className="flex items-center gap-3" role="group" aria-labelledby="trip-seats-label">
                   <button
                     type="button"
+                    aria-label="Убрать одно место"
                     onClick={() => setFormData({ ...formData, seats: Math.max(1, formData.seats - 1) })}
                     className="w-11 h-11 rounded-xl border border-outline-variant/40 bg-surface-container/30 hover:bg-surface-container/60 text-xl font-bold transition-all flex items-center justify-center"
-                  >−</button>
-                  <div className="flex-1 text-center">
+                  ><span aria-hidden="true">−</span></button>
+                  <div className="flex-1 text-center" role="status">
                     <span className="text-2xl font-bold">{formData.seats}</span>
                     <span className="text-sm text-on-surface-variant ml-2">{formData.seats === 1 ? 'место' : formData.seats < 5 ? 'места' : 'мест'}</span>
                   </div>
                   <button
                     type="button"
+                    aria-label="Добавить одно место"
                     onClick={() => setFormData({ ...formData, seats: Math.min(8, formData.seats + 1) })}
                     className="w-11 h-11 rounded-xl border border-outline-variant/40 bg-surface-container/30 hover:bg-surface-container/60 text-xl font-bold transition-all flex items-center justify-center"
-                  >+</button>
+                  ><span aria-hidden="true">+</span></button>
                 </div>
               </div>
 
               {/* Amenities (drivers only) */}
               {role === 'driver' && (
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Удобства в поездке</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {/* Удобства — набор независимых переключателей «включено /
+                      выключено», поэтому aria-pressed, а не radio: выбрать
+                      можно сколько угодно сразу. Значок-эмодзи скрыт от
+                      скринридера, иначе он читал бы его название вслух перед
+                      каждой подписью. */}
+                  <span id="trip-amenities-label" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1 block">Удобства в поездке</span>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2" role="group" aria-labelledby="trip-amenities-label">
                     {AMENITIES.map(a => {
                       const active = formData.amenities.includes(a.id);
                       return (
                         <button
                           key={a.id}
                           type="button"
+                          aria-pressed={active}
                           onClick={() => toggleAmenity(a.id)}
                           className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
                             active
@@ -337,9 +358,9 @@ export function CreateTrip() {
                               : 'border-outline-variant/30 bg-surface-container/20 text-on-surface-variant hover:bg-surface-container/40'
                           }`}
                         >
-                          <span className="text-base leading-none">{a.icon}</span>
+                          <span className="text-base leading-none" aria-hidden="true">{a.icon}</span>
                           {a.label}
-                          {active && <CheckCircle2 size={13} className="ml-auto shrink-0" />}
+                          {active && <CheckCircle2 size={13} className="ml-auto shrink-0" aria-hidden="true" />}
                         </button>
                       );
                     })}
@@ -348,8 +369,9 @@ export function CreateTrip() {
               )}
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Комментарий (необязательно)</label>
+                <label htmlFor="trip-comment" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Комментарий (необязательно)</label>
                 <textarea
+                  id="trip-comment"
                   value={formData.comment}
                   onChange={e => setFormData({ ...formData, comment: e.target.value })}
                   rows={3}
@@ -369,12 +391,13 @@ export function CreateTrip() {
               </h2>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Стартовая цена (₽)</label>
+                <label htmlFor="trip-price" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Стартовая цена (₽)</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none" aria-hidden="true">
                     <span className="text-xl font-bold text-primary-container">₽</span>
                   </div>
                   <input
+                    id="trip-price"
                     type="number"
                     value={formData.price}
                     onChange={e => setFormData({ ...formData, price: e.target.value })}
@@ -388,16 +411,22 @@ export function CreateTrip() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Минимальный шаг ставки</label>
-                <div className="flex gap-2 flex-wrap">
+                {/* Готовые варианты шага — взаимоисключающие, поэтому
+                    aria-pressed на каждой кнопке: скринридер сообщает, какая
+                    сейчас выбрана. Поле «Свой» рядом — обычный ввод, ему нужна
+                    собственная подпись; видимой подписи у него нет (в макете
+                    только подсказка внутри поля), поэтому aria-label. */}
+                <span id="trip-bidstep-label" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1 block">Минимальный шаг ставки</span>
+                <div className="flex gap-2 flex-wrap" role="group" aria-labelledby="trip-bidstep-label">
                   {BID_STEPS.map(bs => (
-                    <button key={bs} type="button" onClick={() => setFormData({ ...formData, bid_step: bs })}
+                    <button key={bs} type="button" aria-pressed={formData.bid_step === bs} onClick={() => setFormData({ ...formData, bid_step: bs })}
                       className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${formData.bid_step === bs ? 'border-[#00f0ff]/70 text-[#00f0ff] bg-[#00f0ff]/15' : 'border-outline-variant/30 text-on-surface-variant hover:border-outline-variant/60'}`}>
                       {bs} ₽
                     </button>
                   ))}
                   <input
                     type="number" min="10"
+                    aria-label="Свой шаг ставки в рублях"
                     value={BID_STEPS.includes(formData.bid_step) ? '' : formData.bid_step}
                     onChange={e => { const v = parseInt(e.target.value); if (!isNaN(v) && v >= 10) setFormData({ ...formData, bid_step: v }); }}
                     placeholder="Свой"
@@ -407,10 +436,10 @@ export function CreateTrip() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Длительность аукциона</label>
-                <div className="flex gap-2 flex-wrap">
+                <span id="trip-duration-label" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1 block">Длительность аукциона</span>
+                <div className="flex gap-2 flex-wrap" role="group" aria-labelledby="trip-duration-label">
                   {AUCTION_DURATIONS.map(h => (
-                    <button key={h} type="button" onClick={() => setFormData({ ...formData, auction_duration: h })}
+                    <button key={h} type="button" aria-pressed={formData.auction_duration === h} onClick={() => setFormData({ ...formData, auction_duration: h })}
                       className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${formData.auction_duration === h ? 'border-[#b47aff]/70 text-[#b47aff] bg-[#7701d0]/15' : 'border-outline-variant/30 text-on-surface-variant hover:border-outline-variant/60'}`}>
                       {auctionLabel(h)}
                     </button>
@@ -420,11 +449,12 @@ export function CreateTrip() {
 
               {role === 'driver' && (
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1">Автомобиль</label>
+                  <span id="trip-vehicle-label" className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider pl-1 block">Автомобиль</span>
                   {vehicles.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-2" role="group" aria-labelledby="trip-vehicle-label">
                       {vehicles.map(v => (
                         <button key={v.id} type="button"
+                          aria-pressed={formData.vehicle_id === v.id}
                           onClick={() => setFormData({ ...formData, vehicle_id: v.id === formData.vehicle_id ? '' : v.id })}
                           className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all ${formData.vehicle_id === v.id ? 'border-[#00f0ff]/50 bg-[#00f0ff]/10' : 'border-outline-variant/30 bg-surface-container/30 hover:bg-surface-container/50'}`}>
                           <Car size={20} className={formData.vehicle_id === v.id ? 'text-[#00f0ff]' : 'text-outline'} />

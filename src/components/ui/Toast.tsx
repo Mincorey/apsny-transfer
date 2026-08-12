@@ -30,13 +30,22 @@ const borders: Record<ToastType, string> = {
 export function ToastItem({ type, title, body, onDismiss }: ToastItemProps) {
   return (
     <motion.div
+      // Всплывающее уведомление появляется само, без действия человека, и
+      // само же исчезает. Зрячий заметит его краем глаза; скринридеру нужно
+      // сказать об этом явно, иначе сообщение пройдёт мимо незамеченным.
+      // role="status" проговаривает текст, не перебивая то, что читается
+      // сейчас; aria-live="polite" — то же самое, продублировано для старых
+      // экранных дикторов, которые понимают только его.
+      role="status"
+      aria-live="polite"
       initial={{ opacity: 0, x: 60, scale: 0.93 }}
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 60, scale: 0.93 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
       className={`pointer-events-auto w-72 glass-card rounded-2xl px-4 py-3 flex items-start gap-3 border ${borders[type]} shadow-xl`}
     >
-      <div className="mt-0.5">{icons[type]}</div>
+      {/* Значок дублирует смысл заголовка, читать его вслух незачем. */}
+      <div className="mt-0.5" aria-hidden="true">{icons[type]}</div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-on-surface leading-tight">{title}</div>
         {body && (

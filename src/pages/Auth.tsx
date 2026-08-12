@@ -791,10 +791,24 @@ export function Auth() {
                   >
                     {/* Role selection */}
                     <div className="space-y-4">
-                      <label className="text-xs font-semibold text-primary uppercase tracking-widest pl-1 border-b border-white/10 pb-2 block">Роль</label>
-                      <div className="grid grid-cols-2 gap-4">
+                      {/*
+                        Выбор роли — это переключатель с двумя вариантами, но
+                        собран он из обычных кнопок. Для глаза разницы нет, а
+                        скринридер без подсказок объявил бы две отдельные кнопки
+                        и никак не сообщил бы, какая из них сейчас выбрана.
+                        role="radiogroup" + role="radio" + aria-checked описывают
+                        то, что человек и так видит: одна группа, выбран один из
+                        двух вариантов. Подпись «Роль» — обычный <span>, а не
+                        <label>: <label> обязан указывать на поле ввода, а здесь
+                        поля нет, поэтому группа ссылается на подпись через
+                        aria-labelledby.
+                      */}
+                      <span id="auth-role-label" className="text-xs font-semibold text-primary uppercase tracking-widest pl-1 border-b border-white/10 pb-2 block">Роль</span>
+                      <div className="grid grid-cols-2 gap-4" role="radiogroup" aria-labelledby="auth-role-label">
                         <button
                           type="button"
+                          role="radio"
+                          aria-checked={role === 'passenger'}
                           onClick={() => setRole('passenger')}
                           className={`p-4 flex flex-col items-center gap-3 rounded-2xl border transition-all duration-300 ${
                             role === 'passenger'
@@ -807,6 +821,8 @@ export function Auth() {
                         </button>
                         <button
                           type="button"
+                          role="radio"
+                          aria-checked={role === 'driver'}
                           onClick={() => setRole('driver')}
                           className={`p-4 flex flex-col items-center gap-3 rounded-2xl border transition-all duration-300 ${
                             role === 'driver'
@@ -822,12 +838,15 @@ export function Auth() {
 
                     {/* Full name */}
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-widest pl-1">ФИО</label>
+                      <label htmlFor="auth-fullname" className="text-xs font-semibold text-on-surface-variant uppercase tracking-widest pl-1">ФИО</label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <UserIcon size={20} className="text-outline" />
+                          <UserIcon size={20} className="text-outline" aria-hidden="true" />
                         </div>
                         <input
+                          id="auth-fullname"
+                          name="name"
+                          autoComplete="name"
                           type="text"
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
@@ -841,12 +860,15 @@ export function Auth() {
 
                     {/* Phone */}
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-widest pl-1">Телефон</label>
+                      <label htmlFor="auth-phone" className="text-xs font-semibold text-on-surface-variant uppercase tracking-widest pl-1">Телефон</label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <Phone size={20} className="text-outline" />
+                          <Phone size={20} className="text-outline" aria-hidden="true" />
                         </div>
                         <input
+                          id="auth-phone"
+                          name="tel"
+                          autoComplete="tel"
                           type="tel"
                           inputMode="tel"
                           value={phone}
@@ -860,15 +882,16 @@ export function Auth() {
 
                     {/* Telegram */}
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-widest pl-1">
+                      <label htmlFor="auth-telegram" className="text-xs font-semibold text-on-surface-variant uppercase tracking-widest pl-1">
                         Telegram{' '}
                         <span className="text-outline normal-case tracking-normal font-normal">— необязательно</span>
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <MessageCircle size={20} className="text-outline" />
+                          <MessageCircle size={20} className="text-outline" aria-hidden="true" />
                         </div>
                         <input
+                          id="auth-telegram"
                           type="text"
                           value={telegram}
                           onChange={(e) => setTelegram(applyTelegramMask(e.target.value))}
@@ -881,15 +904,16 @@ export function Auth() {
 
                     {/* WhatsApp */}
                     <div className="space-y-2">
-                      <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-widest pl-1">
+                      <label htmlFor="auth-whatsapp" className="text-xs font-semibold text-on-surface-variant uppercase tracking-widest pl-1">
                         WhatsApp{' '}
                         <span className="text-outline normal-case tracking-normal font-normal">— необязательно</span>
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                          <Phone size={20} className="text-outline" />
+                          <Phone size={20} className="text-outline" aria-hidden="true" />
                         </div>
                         <input
+                          id="auth-whatsapp"
                           type="text"
                           inputMode="numeric"
                           value={waDisplay(whatsapp)}
@@ -905,12 +929,15 @@ export function Auth() {
 
               {/* Email */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-widest pl-1">Email</label>
+                <label htmlFor="auth-email" className="text-xs font-semibold text-on-surface-variant uppercase tracking-widest pl-1">Email</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Mail size={20} className="text-outline" />
+                    <Mail size={20} className="text-outline" aria-hidden="true" />
                   </div>
                   <input
+                    id="auth-email"
+                    name="email"
+                    autoComplete="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -923,12 +950,17 @@ export function Auth() {
 
               {/* Password */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-widest pl-1">Ключ доступа (Пароль)</label>
+                <label htmlFor="auth-password" className="text-xs font-semibold text-on-surface-variant uppercase tracking-widest pl-1">Ключ доступа (Пароль)</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Lock size={20} className="text-outline" />
+                    <Lock size={20} className="text-outline" aria-hidden="true" />
                   </div>
                   <input
+                    id="auth-password"
+                    name="password"
+                    // Подсказка менеджерам паролей: на входе предлагать
+                    // сохранённый пароль, при регистрации — придумать новый.
+                    autoComplete={isLogin ? 'current-password' : 'new-password'}
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

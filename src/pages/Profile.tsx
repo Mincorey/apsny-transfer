@@ -553,23 +553,35 @@ export function Profile() {
         {/* Row 1: avatar (overlaps banner) */}
         <div className="flex items-start">
           <div className="relative shrink-0">
-            <div
+            {/*
+              Аватар. Раньше это был <div> с обработчиком клика — то есть
+              сменить фото можно было только мышью: с клавиатуры на такой
+              элемент не попасть (Tab его не видит), а скринридер объявлял его
+              как обычную картинку, без намёка, что это кнопка. Заменено на
+              настоящую <button>: Tab доходит, Enter и пробел работают, фокус
+              виден, роль объявляется. Внешний вид не изменился.
+              Заглушка с первой буквой имени и значок фотоаппарата скрыты от
+              скринридера — они дублируют то, что уже сказано в подписи кнопки.
+            */}
+            <button
+              type="button"
+              aria-label={profile.avatar_url ? 'Сменить фото профиля' : 'Загрузить фото профиля'}
               className="w-24 h-24 rounded-full border-4 border-[#0a0e1a] overflow-hidden bg-surface-container-high flex items-center justify-center cursor-pointer group"
               onClick={() => fileInputRef.current?.click()}
             >
               {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
               ) : (
-                <span className="text-3xl font-display font-bold text-on-surface-variant">
+                <span className="text-3xl font-display font-bold text-on-surface-variant" aria-hidden="true">
                   {profile.full_name.charAt(0).toUpperCase()}
                 </span>
               )}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center" aria-hidden="true">
                 {avatarUploading
                   ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   : <Camera size={22} className="text-white" />}
               </div>
-            </div>
+            </button>
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
           </div>
         </div>
@@ -639,8 +651,9 @@ export function Profile() {
               {editing ? (
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Имя</label>
+                    <label htmlFor="profile-name" className="text-xs text-on-surface-variant mb-1 block">Имя</label>
                     <input
+                      id="profile-name"
                       value={editData.full_name}
                       onChange={(e) => setEditData({ ...editData, full_name: e.target.value })}
                       className="w-full input-glass px-4 py-2.5 rounded-xl text-sm font-medium"
@@ -648,8 +661,9 @@ export function Profile() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Telegram</label>
+                    <label htmlFor="profile-telegram" className="text-xs text-on-surface-variant mb-1 block">Telegram</label>
                     <input
+                      id="profile-telegram"
                       value={editData.telegram}
                       onChange={(e) => setEditData({ ...editData, telegram: applyTelegramMask(e.target.value) })}
                       className="w-full input-glass px-4 py-2.5 rounded-xl text-sm font-medium"
@@ -658,8 +672,9 @@ export function Profile() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">WhatsApp</label>
+                    <label htmlFor="profile-whatsapp" className="text-xs text-on-surface-variant mb-1 block">WhatsApp</label>
                     <input
+                      id="profile-whatsapp"
                       value={waDisplay(editData.whatsapp)}
                       onChange={(e) => setEditData({ ...editData, whatsapp: normalizeWaDigits(e.target.value) })}
                       className="w-full input-glass px-4 py-2.5 rounded-xl text-sm font-medium"
@@ -668,8 +683,9 @@ export function Profile() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-on-surface-variant mb-1 block">Мессенджер MAX</label>
+                    <label htmlFor="profile-max" className="text-xs text-on-surface-variant mb-1 block">Мессенджер MAX</label>
                     <input
+                      id="profile-max"
                       value={editData.max}
                       onChange={(e) => setEditData({ ...editData, max: applyMaxMask(e.target.value) })}
                       className="w-full input-glass px-4 py-2.5 rounded-xl text-sm font-medium"
@@ -1066,8 +1082,9 @@ export function Profile() {
                   <h4 className="font-bold">Новый автомобиль</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs text-on-surface-variant uppercase mb-1 block">Марка и модель</label>
+                      <label htmlFor="vehicle-model" className="text-xs text-on-surface-variant uppercase mb-1 block">Марка и модель</label>
                       <input
+                        id="vehicle-model"
                         required
                         value={newVehicle.make_model}
                         onChange={(e) => setNewVehicle({ ...newVehicle, make_model: e.target.value })}
@@ -1076,8 +1093,9 @@ export function Profile() {
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-on-surface-variant uppercase mb-1 block">Гос. номер</label>
+                      <label htmlFor="vehicle-plate" className="text-xs text-on-surface-variant uppercase mb-1 block">Гос. номер</label>
                       <input
+                        id="vehicle-plate"
                         required
                         value={newVehicle.license_plate}
                         onChange={(e) => setNewVehicle({ ...newVehicle, license_plate: e.target.value })}
@@ -1086,8 +1104,9 @@ export function Profile() {
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-on-surface-variant uppercase mb-1 block">Мест</label>
+                      <label htmlFor="vehicle-seats" className="text-xs text-on-surface-variant uppercase mb-1 block">Мест</label>
                       <input
+                        id="vehicle-seats"
                         required
                         type="number"
                         min="1"
@@ -1098,7 +1117,11 @@ export function Profile() {
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-on-surface-variant uppercase mb-1 block">Фото</label>
+                      {/* Не <label>: настоящее поле выбора файла спрятано и
+                          управляется кнопкой ниже, а <label> обязан указывать
+                          на поле — указывать на скрытое бессмысленно. Кнопка
+                          «Выбрать фото» подписывает себя сама видимым текстом. */}
+                      <span className="text-xs text-on-surface-variant uppercase mb-1 block">Фото</span>
                       <input
                         ref={vehiclePhotoRef}
                         type="file"
@@ -1108,9 +1131,10 @@ export function Profile() {
                       />
                       {vehiclePhotoPreview ? (
                         <div className="relative w-full h-40 rounded-xl overflow-hidden group">
-                          <img src={vehiclePhotoPreview} alt="Preview" className="w-full h-full object-cover" />
+                          <img src={vehiclePhotoPreview} alt="Выбранное фото автомобиля" className="w-full h-full object-cover" />
                           <button
                             type="button"
+                            aria-label="Убрать выбранное фото"
                             onClick={() => {
                               if (vehiclePhotoPreview) URL.revokeObjectURL(vehiclePhotoPreview);
                               setVehiclePhotoFile(null);
@@ -1119,7 +1143,7 @@ export function Profile() {
                             }}
                             className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
                           >
-                            <X size={12} />
+                            <X size={12} aria-hidden="true" />
                           </button>
                         </div>
                       ) : (

@@ -94,7 +94,7 @@ export function LogoutModal({
   onConfirm: () => void;
 }) {
   return (
-    <Modal open={open} onClose={onClose} size="sm">
+    <Modal open={open} onClose={onClose} size="sm" label="Выйти из аккаунта?">
       <div className="flex flex-col items-center text-center gap-4">
         <div className="w-16 h-16 rounded-full bg-error/10 border border-error/25 flex items-center justify-center shadow-[0_0_24px_rgba(239,68,68,0.2)]">
           <LogOut size={28} className="text-error" />

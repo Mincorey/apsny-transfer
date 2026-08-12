@@ -119,14 +119,41 @@ export default function App() {
                 path="/rides/driver"
                 element={<PublicLayout><Feed feedType="request" /></PublicLayout>}
               />
+              {/*
+                Главная страница.
+
+                До 12.08.2026 адрес «/» был доступен только тем, кто вошёл, а
+                гостя мгновенно перебрасывало на «/login». Выглядело безобидно,
+                но означало, что у сайта нет главной страницы: поисковый робот —
+                всегда гость, он приходил на «/», получал переадресацию и
+                индексировал содержимое под адресом «/login». При этом
+                sitemap.xml подавал «/» с наивысшим приоритетом, а страница
+                входа — это как раз посадочная страница со всей рекламой
+                сервиса. То есть главная у сайта была, но под чужим именем.
+
+                Теперь «/» отдаёт гостю ту же самую посадочную страницу (форма
+                входа на ней же, ниже по прокрутке), а вошедшему — ленту. Для
+                пользователя ничего не изменилось, для поисковика появилась
+                нормальная главная. Разбор — в ПРОВЕРИТЬ.md, раздел C2-бис.
+              */}
               <Route
-                path="/login"
-                element={!session ? <Auth /> : <Navigate to="/" replace />}
-              />
+                path="/"
+                element={session ? <MainLayout /> : <Auth />}
+              >
+                <Route index element={<Feed />} />
+              </Route>
+
+              {/*
+                Старый адрес входа. Оставлен живым и ведёт на «/»: на него
+                ссылались одиннадцать мест в коде, он мог осесть в закладках и
+                в индексе поисковика. Отдавать по нему ту же страницу, что и по
+                «/», нельзя — это два адреса с одинаковым содержимым, и
+                поисковик считает такое дублем.
+              */}
+              <Route path="/login" element={<Navigate to="/" replace />} />
 
               {/* Authenticated routes (MainLayout) */}
-              <Route element={session ? <MainLayout /> : <Navigate to="/login" replace />}>
-                <Route path="/" element={<Feed />} />
+              <Route element={session ? <MainLayout /> : <Navigate to="/" replace />}>
                 <Route path="/create" element={<CreateTrip />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/users/:id" element={<UserProfile />} />

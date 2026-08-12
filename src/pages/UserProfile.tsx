@@ -283,7 +283,7 @@ export function UserProfile() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/')}
             className="w-full btn-mesh py-3 rounded-xl font-semibold flex items-center justify-center gap-2 mb-6"
           >
             <LogIn size={18} />Войти для связи

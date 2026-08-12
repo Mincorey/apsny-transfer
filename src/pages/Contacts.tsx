@@ -80,6 +80,8 @@ export function Contacts() {
           <form onSubmit={handleSubmit} className="space-y-3">
             <input
               type="text"
+              aria-label="Ваше имя"
+              autoComplete="name"
               value={name}
               onChange={(e) => { setName(e.target.value); setError(null); }}
               placeholder="Ваше имя"
@@ -88,6 +90,8 @@ export function Contacts() {
             />
             <input
               type="email"
+              aria-label="Email для ответа, необязательно"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email для ответа (необязательно)"
@@ -95,6 +99,7 @@ export function Contacts() {
               className="w-full px-4 py-3 rounded-xl input-glass text-sm"
             />
             <textarea
+              aria-label="Текст сообщения"
               value={message}
               onChange={(e) => { setMessage(e.target.value); setError(null); }}
               placeholder="Сообщение..."

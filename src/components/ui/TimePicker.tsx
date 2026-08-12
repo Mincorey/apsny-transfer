@@ -5,12 +5,15 @@ interface TimePickerProps {
   value: string; // HH:MM
   onChange: (val: string) => void;
   placeholder?: string;
+  /** Идентификатор кнопки-поля — чтобы внешняя подпись «Время» могла
+   *  сослаться на неё через <label htmlFor>. Подробности — в DatePicker. */
+  id?: string;
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 
-export function TimePicker({ value, onChange, placeholder = 'Выберите время' }: TimePickerProps) {
+export function TimePicker({ value, onChange, placeholder = 'Выберите время', id }: TimePickerProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const [tempHour, setTempHour] = useState(() => value ? parseInt(value.split(':')[0] ?? '0') : -1);
@@ -58,8 +61,11 @@ export function TimePicker({ value, onChange, placeholder = 'Выберите в
   return (
     <div className="relative w-full" ref={ref}>
       <button
+        id={id}
         type="button"
         onClick={() => setOpen(v => !v)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
         className="w-full pl-11 pr-4 py-4 rounded-2xl input-glass font-medium text-left transition-all"
       >
         <span className={value ? 'text-on-surface' : 'text-outline'}>

@@ -6,6 +6,14 @@ interface DatePickerProps {
   value: string; // YYYY-MM-DD
   onChange: (val: string) => void;
   placeholder?: string;
+  /**
+   * Идентификатор кнопки-поля. Нужен, чтобы внешняя подпись («Дата») могла
+   * сослаться на неё через <label htmlFor>. Поля ввода здесь нет — календарь
+   * открывается кнопкой, — а <label> умеет указывать в том числе на кнопку:
+   * клик по подписи переводит на неё фокус, а скринридер читает подпись
+   * вместе с содержимым кнопки.
+   */
+  id?: string;
 }
 
 const MONTHS_RU = [
@@ -23,7 +31,7 @@ function parseDisplay(ymd: string): string {
   return `${d}.${m}.${y}`;
 }
 
-export function DatePicker({ value, onChange, placeholder = 'Выберите дату' }: DatePickerProps) {
+export function DatePicker({ value, onChange, placeholder = 'Выберите дату', id }: DatePickerProps) {
   const today = new Date();
   today.setHours(0,0,0,0);
   const initDate = value ? new Date(value + 'T00:00:00') : today;
@@ -65,8 +73,11 @@ export function DatePicker({ value, onChange, placeholder = 'Выберите д
   return (
     <div className="relative w-full" ref={ref}>
       <button
+        id={id}
         type="button"
         onClick={() => setOpen(v => !v)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
         className="w-full pl-11 pr-4 py-4 rounded-2xl input-glass font-medium text-left transition-all"
       >
         <span className={value ? 'text-on-surface' : 'text-outline'}>
