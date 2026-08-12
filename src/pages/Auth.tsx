@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
-  Mail, Lock, Phone, User as UserIcon, ArrowRight, Shield, Route,
-  Zap, TrendingUp, Map, Car, Star, CheckCircle, Users,
+  Mail, Lock, Phone, User as UserIcon, ArrowRight, Route,
+  Zap, TrendingUp, Map, Car, Star, Users, Clock, ShieldAlert,
   MapPin, MessageCircle, ChevronRight, Menu, X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -50,46 +50,75 @@ const PARTICLES = Array.from({ length: 18 }, (_, i) => ({
   delay: i * 0.35,
 }));
 
-const HOW_IT_WORKS = [
-  {
-    icon: UserIcon,
-    colorClass: 'text-primary-fixed',
-    bgClass: 'bg-primary-container/10',
-    borderClass: 'border-primary-container/30',
-    title: 'Выберите роль',
-    desc: 'Вы пассажир или водитель? Создайте аккаунт и укажите роль — это определит ваши возможности на платформе.',
-  },
-  {
-    icon: Route,
-    colorClass: 'text-secondary-fixed',
-    bgClass: 'bg-secondary-container/10',
-    borderClass: 'border-secondary-container/30',
-    title: 'Создайте поездку',
-    desc: 'Укажите маршрут, дату, количество мест и стартовую цену. Пассажиры публикуют запросы, водители — предложения.',
-  },
-  {
-    icon: Zap,
-    colorClass: 'text-tertiary-fixed-dim',
-    bgClass: 'bg-tertiary-container/10',
-    borderClass: 'border-tertiary-container/30',
-    title: 'Аукцион начался',
-    desc: 'Водители делают ставки на пассажирские запросы. Выбирайте лучшее предложение по цене и рейтингу.',
-  },
-  {
-    icon: CheckCircle,
-    colorClass: 'text-primary-container',
-    bgClass: 'bg-primary-container/10',
-    borderClass: 'border-primary-container/30',
-    title: 'В путь!',
-    desc: 'Победитель аукциона получает контакты другой стороны. Всё прозрачно и безопасно.',
-  },
-];
+/**
+ * Шаги сделки — отдельно для пассажира и для водителя.
+ *
+ * Раньше здесь был один общий текст, и он был написан со стороны водителя:
+ * «водители делают ставки на пассажирские запросы». Пассажир, читая это,
+ * не понимал, что делать ему. Теперь два набора, между ними переключатель:
+ * каждый читает свою половину сделки и не продирается через чужую.
+ */
+const HOW_IT_WORKS: Record<'passenger' | 'driver', { icon: typeof UserIcon; title: string; desc: string }[]> = {
+  passenger: [
+    {
+      icon: Route,
+      title: 'Опишите поездку',
+      desc: 'Откуда, куда, когда и сколько готовы заплатить. Это стартовая цена — выше неё вы не заплатите.',
+    },
+    {
+      icon: Zap,
+      title: 'Водители предлагают меньше',
+      desc: 'Каждый называет свою цену. Кто предложит выгоднее — тот и лидирует в торге.',
+    },
+    {
+      icon: Star,
+      title: 'Выбираете, с кем ехать',
+      desc: 'Цена — не единственное. Видно рейтинг водителя, отзывы пассажиров и машину.',
+    },
+    {
+      icon: MessageCircle,
+      title: 'Договариваетесь напрямую',
+      desc: 'Торг закончен — открываются контакты друг друга. Дальше без посредников.',
+    },
+  ],
+  driver: [
+    {
+      icon: Route,
+      title: 'Смотрите запросы',
+      desc: 'Пассажиры пишут, куда и когда им нужно. Выбираете те, что по пути.',
+    },
+    {
+      icon: Zap,
+      title: 'Называете свою цену',
+      desc: 'Соглашаетесь со стартовой или предлагаете ниже, чтобы обойти других водителей.',
+    },
+    {
+      icon: Star,
+      title: 'Пассажир выбирает',
+      desc: 'Смотрит на цену, ваш рейтинг и отзывы. Побеждает не всегда самый дешёвый.',
+    },
+    {
+      icon: MessageCircle,
+      title: 'Договариваетесь напрямую',
+      desc: 'Открываются контакты. С поездки сервис не берёт ничего — только за публикацию.',
+    },
+  ],
+};
 
+/**
+ * Популярные направления.
+ *
+ * Раньше здесь были голые плашки «А → Б», которые ничего не сообщали.
+ * Время и расстояние — приблизительные и намеренно статичные: это свойство
+ * дороги, а не наших данных, и оно не поедет от того, сколько поездок в базе.
+ * Пометка о границе важнее всего остального: она определяет и время в пути,
+ * и то, какие документы брать с собой.
+ */
 const POPULAR_ROUTES = [
-  { from: 'Сочи, Аэропорт', to: 'Сухум' },
-  { from: 'Гагра', to: 'Сухум, Аэропорт' },
-  { from: 'Сухум', to: 'Сочи, МореМолл' },
-  { from: 'Гагра', to: 'Сухум' },
+  { from: 'Сочи, Аэропорт', to: 'Сухум',          km: 165, hours: '3–4 ч', border: true },
+  { from: 'Гагра',          to: 'Сухум, Аэропорт', km: 100, hours: '~2 ч',  border: false },
+  { from: 'Сухум',          to: 'Сочи, МореМолл',  km: 170, hours: '3–4 ч', border: true },
+  { from: 'Гагра',          to: 'Сухум',           km: 80,  hours: '~1,5 ч', border: false },
 ];
 
 const DEFAULT_STATS = [
@@ -154,6 +183,8 @@ export function Auth() {
   const [error, setError] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [stats, setStats] = useState(DEFAULT_STATS);
+  // Чью половину сделки показываем в блоке «Как это работает».
+  const [howRole, setHowRole] = useState<'passenger' | 'driver'>('passenger');
 
   const authRef = useRef<HTMLDivElement>(null);
 
@@ -284,35 +315,42 @@ export function Auth() {
     <div className="bg-background text-on-surface overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container min-h-screen">
 
       {/* Header */}
+      {/*
+        Сетка в три колонки, а не justify-between.
+        Логотип шире кнопки «Войти», поэтому при justify-between средний блок
+        оказывался смещён вправо примерно на 70 пикселей — глаз это ловит сразу.
+        Колонки 1fr | auto | 1fr дают настоящий центр независимо от того,
+        что лежит по краям.
+      */}
       <header className="fixed top-0 w-full z-50 flex justify-center items-center px-6 md:px-12 h-20 bg-surface/80 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,219,233,0.15)] transition-all">
-        <div className="w-full max-w-7xl flex justify-between items-center">
-          <div className="flex items-center gap-2">
+        <div className="w-full max-w-7xl grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+          <div className="flex items-center gap-2 justify-self-start">
             <img src="/icons/icon-192.png" alt="" className="w-8 h-8 rounded-lg" />
-            <span className="font-display text-xl font-bold text-primary-fixed-dim tracking-tight">APSNY-TRANSFER</span>
+            <span className="font-display text-xl font-bold text-primary-fixed-dim tracking-tight whitespace-nowrap">APSNY-TRANSFER</span>
           </div>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-3">
+          <nav className="hidden md:flex items-center gap-3 justify-self-center">
           <button
             onClick={() => { setIsLogin(false); setRole('passenger'); scrollToAuth(); }}
-            className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold uppercase tracking-widest transition-all duration-200 border border-[#00f0ff]/40 text-[#00f0ff] bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 hover:border-[#00f0ff]/80 hover:shadow-[0_0_16px_rgba(0,240,255,0.3)]"
+            className="flex items-center h-10 gap-2 px-5 rounded-xl text-sm font-bold uppercase tracking-widest transition-all duration-200 border border-[#00f0ff]/40 text-[#00f0ff] bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 hover:border-[#00f0ff]/80 hover:shadow-[0_0_16px_rgba(0,240,255,0.3)]"
           >
             <UserIcon size={15} />
             Я ЕДУ
           </button>
           <button
             onClick={() => { setIsLogin(false); setRole('driver'); scrollToAuth(); }}
-            className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold uppercase tracking-widest transition-all duration-200 border border-[#7701d0]/50 text-[#b47aff] bg-[#7701d0]/10 hover:bg-[#7701d0]/20 hover:border-[#7701d0]/90 hover:shadow-[0_0_16px_rgba(119,1,208,0.4)]"
+            className="flex items-center h-10 gap-2 px-5 rounded-xl text-sm font-bold uppercase tracking-widest transition-all duration-200 border border-[#7701d0]/50 text-[#b47aff] bg-[#7701d0]/10 hover:bg-[#7701d0]/20 hover:border-[#7701d0]/90 hover:shadow-[0_0_16px_rgba(119,1,208,0.4)]"
           >
             <Car size={15} />
             Я ВЕЗУ
           </button>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 justify-self-end">
           <button
             onClick={scrollToAuth}
-            className="hidden md:block px-6 py-2.5 rounded-lg bg-surface-container hover:bg-white/10 text-on-surface font-semibold transition-colors border border-white/10"
+            className="hidden md:flex items-center h-10 px-6 rounded-xl bg-surface-container hover:bg-white/10 text-on-surface font-semibold transition-colors border border-white/10"
           >
             Войти
           </button>
@@ -554,30 +592,88 @@ export function Auth() {
             transition={{ duration: 0.6 }}
             className="mb-16 text-center max-w-3xl mx-auto"
           >
-            <h2 className="text-4xl font-display font-bold mb-6">Как это работает</h2>
-            <p className="text-lg text-on-surface-variant">Четыре шага от регистрации до успешной поездки</p>
+            <h2 className="text-4xl font-display font-bold mb-6">Цену решает торг</h2>
+            <p className="text-lg text-on-surface-variant">
+              Здесь нет тарифов. Одна сторона объявляет поездку и стартовую цену, вторая
+              предлагает свои условия — и стороны сходятся посередине.
+            </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {HOW_IT_WORKS.map((step, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-50px' }}
-                transition={{ duration: 0.5, delay: i * 0.12 }}
-                className={`relative glass-panel rounded-3xl p-8 border ${step.borderClass} hover:scale-[1.02] transition-transform duration-300`}
+          {/* Переключатель роли: у пассажира и водителя разные половины сделки,
+              и смешивать их в одном тексте — верный способ запутать обоих. */}
+          <div className="flex justify-center mb-14">
+            <div
+              role="tablist"
+              aria-label="Чья сторона сделки"
+              className="inline-flex p-1 rounded-2xl bg-surface-container/60 border border-white/10 backdrop-blur"
+            >
+              {([
+                { key: 'passenger' as const, label: 'Я еду',  icon: UserIcon, accent: '#00f0ff' },
+                { key: 'driver' as const,    label: 'Я везу', icon: Car,      accent: '#b47aff' },
+              ]).map((tab) => {
+                const active = howRole === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setHowRole(tab.key)}
+                    className="relative flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold uppercase tracking-widest transition-colors"
+                    style={{ color: active ? tab.accent : undefined }}
+                  >
+                    {active && (
+                      <motion.span
+                        layoutId="how-role-pill"
+                        transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                        className="absolute inset-0 rounded-xl border"
+                        style={{
+                          background: `${tab.accent}1a`,
+                          borderColor: `${tab.accent}66`,
+                          boxShadow: `0 0 20px ${tab.accent}33`,
+                        }}
+                      />
+                    )}
+                    <tab.icon size={15} className={`relative z-10 ${active ? '' : 'text-on-surface-variant'}`} />
+                    <span className={`relative z-10 ${active ? '' : 'text-on-surface-variant'}`}>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Шаги как остановки на маршруте: линия между узлами — тот же приём,
+              что и в карточке поездки, только развёрнутый по горизонтали. */}
+          <div className="relative">
+            <div
+              aria-hidden="true"
+              className="hidden lg:block absolute left-[12.5%] right-[12.5%] top-7 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
+            />
+            <AnimatePresence mode="wait">
+              <motion.ol
+                key={howRole}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.25 }}
+                className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10"
               >
-                <div className={`text-5xl font-display font-bold ${step.colorClass} opacity-25 absolute top-5 right-6 select-none`}>
-                  {i + 1}
-                </div>
-                <div className={`w-14 h-14 rounded-2xl ${step.bgClass} border ${step.borderClass} flex items-center justify-center mb-6`}>
-                  <step.icon className={`${step.colorClass} w-7 h-7`} />
-                </div>
-                <h3 className="text-lg font-bold mb-3">{step.title}</h3>
-                <p className="text-on-surface-variant text-sm leading-relaxed">{step.desc}</p>
-              </motion.div>
-            ))}
+                {HOW_IT_WORKS[howRole].map((step, i) => (
+                  <li key={i} className="relative flex flex-col items-center text-center lg:pt-0">
+                    {/* Узел на линии */}
+                    <div className="relative mb-6">
+                      <div className="w-14 h-14 rounded-full bg-surface-container border border-white/10 flex items-center justify-center shadow-[0_0_0_6px_var(--color-background)]">
+                        <step.icon size={22} className="text-primary-fixed" />
+                      </div>
+                      <span className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary-container text-background text-xs font-bold flex items-center justify-center">
+                        {i + 1}
+                      </span>
+                    </div>
+                    <h3 className="text-base font-bold mb-2">{step.title}</h3>
+                    <p className="text-on-surface-variant text-sm leading-relaxed max-w-[260px]">{step.desc}</p>
+                  </li>
+                ))}
+              </motion.ol>
+            </AnimatePresence>
           </div>
         </div>
       </section>
@@ -592,28 +688,63 @@ export function Auth() {
             transition={{ duration: 0.6 }}
             className="mb-16 text-center max-w-3xl mx-auto"
           >
-            <h2 className="text-4xl font-display font-bold mb-6">Популярные маршруты</h2>
-            <p className="text-lg text-on-surface-variant">Самые востребованные направления между Абхазией и Россией</p>
+            <h2 className="text-4xl font-display font-bold mb-6">Куда ездят чаще всего</h2>
+            <p className="text-lg text-on-surface-variant">
+              Побережье от Сочи до Сухума. Время указано с запасом — на границе бывают очереди.
+            </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {POPULAR_ROUTES.map((route, i) => (
-              <motion.div
+              <motion.button
                 key={i}
-                initial={{ opacity: 0, scale: 0.96 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                type="button"
+                onClick={() => navigate('/rides/passenger')}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-50px' }}
                 transition={{ duration: 0.4, delay: i * 0.07 }}
-                className="glass-panel rounded-2xl p-6 border border-white/10"
+                className="group relative text-left rounded-3xl p-7 bg-surface-container/40 border border-white/10 overflow-hidden transition-all duration-300 hover:border-[#00f0ff]/40 hover:bg-surface-container/70"
               >
-                <div className="flex items-center justify-center gap-3 flex-wrap">
-                  <div className="w-2.5 h-2.5 rounded-full bg-primary-fixed flex-shrink-0"></div>
-                  <span className="font-bold text-on-surface">{route.from}</span>
-                  <ArrowRight size={16} className="text-primary-fixed-dim flex-shrink-0" />
-                  <span className="font-bold text-on-surface">{route.to}</span>
-                  <div className="w-2.5 h-2.5 rounded-full bg-secondary-fixed flex-shrink-0"></div>
+                {/* Подсветка появляется от угла при наведении — та же логика, что
+                    у карточек поездок в ленте, чтобы язык был один. */}
+                <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-[#00f0ff]/0 blur-3xl transition-all duration-500 group-hover:bg-[#00f0ff]/10" />
+
+                <div className="relative flex items-start gap-4">
+                  {/* Вертикальная нитка маршрута — узнаваемый элемент проекта */}
+                  <div className="flex flex-col items-center pt-1.5 shrink-0">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#00f0ff] shadow-[0_0_10px_rgba(0,240,255,0.7)]" />
+                    <span className="w-px flex-1 min-h-[34px] my-1 bg-gradient-to-b from-[#00f0ff]/60 to-[#b47aff]/60" />
+                    <span className="w-2.5 h-2.5 rounded-full border-2 border-[#b47aff]" />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="font-display text-lg font-bold leading-snug truncate">{route.from}</div>
+                    <div className="font-display text-lg font-bold leading-snug truncate mt-[26px]">{route.to}</div>
+                  </div>
                 </div>
-              </motion.div>
+
+                <div className="relative mt-6 pt-5 border-t border-white/5 flex items-center gap-5 text-sm flex-wrap">
+                  <span className="flex items-center gap-1.5 text-on-surface-variant">
+                    <Clock size={14} className="text-primary-fixed-dim" />
+                    {route.hours}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-on-surface-variant">
+                    <Route size={14} className="text-primary-fixed-dim" />
+                    {route.km} км
+                  </span>
+                  {route.border && (
+                    <span className="flex items-center gap-1.5 text-amber-400/90">
+                      <ShieldAlert size={14} />
+                      Через границу
+                    </span>
+                  )}
+                  <span className="ml-auto flex items-center gap-1 text-primary-fixed font-semibold opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
+                    Смотреть поездки
+                    <ChevronRight size={15} />
+                  </span>
+                </div>
+              </motion.button>
             ))}
           </div>
         </div>
@@ -629,7 +760,7 @@ export function Auth() {
             transition={{ duration: 0.6 }}
             className="text-4xl font-display font-bold mb-6"
           >
-            Интеллект в движении
+            Почему это выгодно обоим
           </motion.h2>
           <motion.p
             initial={{ opacity: 0 }}
@@ -638,7 +769,7 @@ export function Auth() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-lg text-on-surface-variant"
           >
-            Наша система аукционов находит идеальное равновесие между спросом и предложением.
+            Пассажир не переплачивает за диспетчера, водитель не гоняет порожняком.
           </motion.p>
         </div>
 
@@ -652,13 +783,14 @@ export function Auth() {
           >
             <div className="absolute top-0 right-0 w-64 h-64 bg-secondary-container/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 group-hover:bg-secondary-container/20 transition-all duration-700"></div>
             <UserIcon className="text-secondary-fixed w-10 h-10 mb-6" />
-            <h3 className="text-2xl font-bold mb-4">Для пассажиров: устанавливайте свою цену</h3>
+            <h3 className="text-2xl font-bold mb-4">Пассажиру: цену называете вы</h3>
             <p className="text-lg text-on-surface-variant max-w-xl">
-              Хватит платить по наценкам. Предложите свою идеальную цену за маршрут. Водители согласятся на ваше предложение, гарантируя премиальную поездку по справедливой рыночной цене.
+              Вы пишете, сколько готовы заплатить. Дальше водители предлагают меньше — каждый
+              свою цену. Выше вашей стартовой не заплатите в любом случае.
             </p>
-            <div className="mt-8 flex gap-4">
-              <div className="px-4 py-2 rounded-lg bg-primary-container text-on-primary-container text-xs uppercase tracking-widest font-semibold">Прозрачно</div>
-              <div className="px-4 py-2 rounded-lg bg-secondary-container text-on-secondary-container text-xs uppercase tracking-widest font-semibold">Рыночный подход</div>
+            <div className="mt-8 flex gap-3 flex-wrap">
+              <span className="px-4 py-2 rounded-lg border border-[#00f0ff]/30 bg-[#00f0ff]/10 text-[#00f0ff] text-xs uppercase tracking-widest font-semibold">Без наценки диспетчера</span>
+              <span className="px-4 py-2 rounded-lg border border-[#7701d0]/40 bg-[#7701d0]/10 text-[#b47aff] text-xs uppercase tracking-widest font-semibold">Видно, кто везёт</span>
             </div>
           </motion.div>
 
@@ -670,10 +802,11 @@ export function Auth() {
             className="md:col-span-4 glass-panel rounded-3xl p-10 relative overflow-hidden group hover:bg-surface-container-high/40 transition-colors duration-500"
           >
             <div className="absolute bottom-0 right-0 w-48 h-48 bg-primary-container/10 rounded-full blur-3xl translate-y-1/4 translate-x-1/4 group-hover:bg-primary-container/20 transition-all duration-700"></div>
-            <Shield className="text-primary-fixed w-10 h-10 mb-6" />
-            <h3 className="text-2xl font-bold mb-4">Водителям: ноль пустых пробегов</h3>
+            <Car className="text-primary-fixed w-10 h-10 mb-6" />
+            <h3 className="text-2xl font-bold mb-4">Водителю: обратный рейс не пустой</h3>
             <p className="text-on-surface-variant">
-              Превращайте пустые километры в прибыль. Просматривайте активные запросы пассажиров и мгновенно делайте ставки.
+              Возвращаетесь порожняком? Посмотрите, кому нужно в ту же сторону, и предложите
+              свою цену. С поездки сервис не берёт ничего.
             </p>
           </motion.div>
 
@@ -686,15 +819,35 @@ export function Auth() {
           >
             <div>
               <TrendingUp className="text-tertiary-fixed-dim w-10 h-10 mb-6" />
-              <h3 className="text-xl font-bold mb-3">Аналитика в реальном времени</h3>
-              <p className="text-on-surface-variant">Оценка глубины рынка и модели ценообразования на основе исторических данных о маршрутах.</p>
+              <h3 className="text-xl font-bold mb-3">Торг открытый</h3>
+              <p className="text-on-surface-variant">
+                Видно каждую ставку и того, кто её сделал. Никаких закрытых предложений
+                и «специальных условий» за спиной.
+              </p>
             </div>
-            <div className="mt-8 relative h-32 w-full flex items-end justify-between px-4">
-              <div className="w-[12%] bg-tertiary-fixed-dim/20 rounded-t-md h-[30%]"></div>
-              <div className="w-[12%] bg-tertiary-fixed-dim/40 rounded-t-md h-[60%]"></div>
-              <div className="w-[12%] bg-tertiary-fixed-dim/20 rounded-t-md h-[40%]"></div>
-              <div className="w-[12%] bg-tertiary-fixed-dim/80 rounded-t-md h-[90%] shadow-[0_0_20px_rgba(0,226,144,0.4)]"></div>
-              <div className="absolute bottom-0 left-0 w-full h-[1px] bg-tertiary-fixed-dim/40"></div>
+            {/* Вместо абстрактных столбиков — то, что человек реально увидит
+                на странице поездки: список ставок, где цена идёт вниз. */}
+            <div className="mt-8 space-y-2" aria-hidden="true">
+              {[
+                { name: 'Алхас', price: '5 000 ₽', dim: true },
+                { name: 'Даур',  price: '4 700 ₽', dim: true },
+                { name: 'Олег',  price: '4 400 ₽', dim: false },
+              ].map((bid, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center justify-between rounded-xl px-4 py-2.5 border transition-colors ${
+                    bid.dim
+                      ? 'border-white/5 bg-white/[0.02] text-on-surface-variant'
+                      : 'border-tertiary-fixed-dim/40 bg-tertiary-fixed-dim/10 text-on-surface'
+                  }`}
+                >
+                  <span className="text-sm">{bid.name}</span>
+                  <span className={`text-sm font-mono font-bold ${bid.dim ? '' : 'text-tertiary-fixed-dim'}`}>
+                    {bid.price}
+                  </span>
+                </div>
+              ))}
+              <p className="text-xs text-outline pt-1">Побеждает нижняя ставка</p>
             </div>
           </motion.div>
 
@@ -709,10 +862,21 @@ export function Auth() {
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdHRlcm4geD0iMCIgeT0iMCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiIHN0cm9rZS13aWR0aD0iMSI+PHBhdGggZD0iTTAgNDBMNDAgNDBMMDAgMCIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-50 z-10"></div>
             <div className="relative z-20 p-10 h-full flex flex-col justify-center">
               <Map className="text-secondary-fixed w-10 h-10 mb-6" />
-              <h3 className="text-3xl font-bold mb-4">Междугородняя сеть</h3>
-              <p className="text-lg text-on-surface-variant max-w-md">
-                В настоящее время работаем на основных маршрутах с ежемесячным запуском новых зон покрытия.
+              <h3 className="text-3xl font-bold mb-4">Побережье целиком</h3>
+              <p className="text-lg text-on-surface-variant max-w-md mb-7">
+                Сочи, Адлер, Гагра, Пицунда, Новый Афон, Сухум. Адрес можно указать любой —
+                хоть от подъезда до стойки регистрации.
               </p>
+              <div className="flex flex-wrap gap-2">
+                {['Сочи', 'Адлер', 'Гагра', 'Пицунда', 'Новый Афон', 'Гудаута', 'Сухум'].map((city) => (
+                  <span
+                    key={city}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-on-surface-variant"
+                  >
+                    {city}
+                  </span>
+                ))}
+              </div>
             </div>
           </motion.div>
         </div>
