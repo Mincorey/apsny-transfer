@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { LogoutModal } from '../components/layout/Sidebar';
 import { Modal } from '../components/ui/Modal';
 import { normalizeWaDigits, waDisplay } from '../lib/contacts';
-import { pluralSeats } from '../lib/utils';
+import { formatPhone, pluralSeats, pluralTrips } from '../lib/utils';
 import { DriverLeaderboard } from '../components/ui/DriverLeaderboard';
 
 interface UserProfile {
@@ -460,7 +460,9 @@ export function Profile() {
 
   const tabs: { key: ProfileTab; label: string }[] = [
     { key: 'profile', label: 'Профиль' },
-    { key: 'trips', label: `Поездки (${myRides.length})` },
+    // «Поездки» в шапке — состоявшиеся (trips_count), здесь — созданные
+    // объявления. Числа разные, поэтому и подписи разные.
+    { key: 'trips', label: `Мои объявления (${myRides.length})` },
     ...(isDriver ? [
       { key: 'reviews' as ProfileTab, label: `Отзывы (${reviews.length})` },
       { key: 'vehicles' as ProfileTab, label: 'Авто' },
@@ -514,7 +516,7 @@ export function Profile() {
 
         <button
           onClick={handleLogout}
-          className="absolute top-4 right-4 flex items-center gap-1.5 px-4 py-2.5 sm:px-3 sm:py-1.5 rounded-xl bg-surface/60 backdrop-blur border border-white/10 text-sm sm:text-xs font-medium text-on-surface-variant hover:text-on-surface transition-colors"
+          className="md:hidden absolute top-4 right-4 flex items-center gap-1.5 px-4 py-2.5 sm:px-3 sm:py-1.5 rounded-xl bg-surface/60 backdrop-blur border border-white/10 text-sm sm:text-xs font-medium text-on-surface-variant hover:text-on-surface transition-colors"
         >
           <LogOut size={16} className="sm:hidden" />
           <LogOut size={13} className="hidden sm:block" /> Выйти
@@ -576,7 +578,7 @@ export function Profile() {
             )}
           </div>
           <h2 className="text-xl font-bold truncate mt-1">{profile.full_name}</h2>
-          <p className="text-xs text-on-surface-variant mt-0.5">{profile.trips_count} поездок</p>
+          <p className="text-xs text-on-surface-variant mt-0.5">{pluralTrips(profile.trips_count)}</p>
         </div>
       </div>
 
@@ -697,7 +699,7 @@ export function Profile() {
                 </div>
               ) : (
                 <div className="divide-y divide-outline-variant/10">
-                  <InfoRow icon={<Phone size={15} />} label="Телефон" value={profile.phone} />
+                  <InfoRow icon={<Phone size={15} />} label="Телефон" value={formatPhone(profile.phone)} />
                   <InfoRow icon={<Mail size={15} />} label="Email" value={profile.email} />
                   {profile.telegram && (
                     <InfoRow

@@ -6,7 +6,7 @@ import {
   User, MapPin, Calendar, LogIn, Clock,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { parseISODate } from '../lib/utils';
+import { formatRideDate, formatPhone, pluralTrips } from '../lib/utils';
 
 interface PublicUserProfile {
   id: string;
@@ -120,12 +120,6 @@ export function UserProfile() {
     init();
   }, [id]);
 
-  function formatDate(dateStr: string) {
-    return parseISODate(dateStr).toLocaleDateString('ru-RU', {
-      day: 'numeric', month: 'long', year: 'numeric',
-    });
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -207,8 +201,7 @@ export function UserProfile() {
           )}
           <div className="glass-card px-3 py-2 rounded-xl flex items-center gap-2">
             <MapPin size={14} className="text-primary-container" />
-            <span className="text-white font-semibold text-sm">{profile.trips_count}</span>
-            <span className="text-white/50 text-xs">поездок</span>
+            <span className="text-white/70 text-sm">{pluralTrips(profile.trips_count)}</span>
           </div>
           <div className="glass-card px-3 py-2 rounded-xl flex items-center gap-2">
             <Calendar size={14} className="text-primary-container/70" />
@@ -236,7 +229,7 @@ export function UserProfile() {
               {profile.phone && (
                 <ContactRow icon={<Phone size={13} />} label="Телефон">
                   <a href={`tel:${profile.phone.replace(/[^\d+]/g, '')}`} className="text-[#00f0ff] hover:underline">
-                    {profile.phone}
+                    {formatPhone(profile.phone)}
                   </a>
                 </ContactRow>
               )}
@@ -348,7 +341,7 @@ export function UserProfile() {
                     <div className="flex items-center gap-3 mt-1 text-white/50 text-sm">
                       <span className="flex items-center gap-1">
                         <Calendar size={12} />
-                        {formatDate(ride.departure_date)}
+                        {formatRideDate(ride.departure_date)}
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock size={12} />
@@ -391,7 +384,7 @@ export function UserProfile() {
                           ))}
                         </div>
                       </div>
-                      <span className="text-white/30 text-xs flex-shrink-0">{formatDate(review.created_at)}</span>
+                      <span className="text-white/30 text-xs flex-shrink-0">{formatRideDate(review.created_at)}</span>
                     </div>
                     {review.comment && (
                       <p className="text-white/70 text-sm leading-relaxed">{review.comment}</p>

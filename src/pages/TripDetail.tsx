@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ReviewModal } from '../components/ui/ReviewModal';
-import { parseISODate, pluralSeats, pluralTrips } from '../lib/utils';
+import { formatRideDate, formatPhone, pluralSeats, pluralTrips } from '../lib/utils';
 import { Modal } from '../components/ui/Modal';
 import { Footer } from '../components/layout/Footer';
 import { useToast } from '../context/ToastContext';
@@ -132,7 +132,7 @@ function ContactButtons({
     <>
       {tel && (
         <a href={`tel:${tel}`} className={`${base} bg-[#00f0ff]/10 border-[#00f0ff]/30 text-[#00f0ff] hover:bg-[#00f0ff]/20`}>
-          {user.phone}
+          {formatPhone(user.phone)}
         </a>
       )}
       {tg && (
@@ -157,7 +157,7 @@ function ContactButtons({
       )}
       {mx && (
         <span className={`${base} bg-surface-container border-white/10 text-on-surface-variant`}>
-          MAX: +{mx}
+          MAX: {formatPhone('+' + mx)}
         </span>
       )}
     </>
@@ -190,14 +190,6 @@ function AuctionTimer({ endTime, large }: { endTime: string | null; large?: bool
       {display}
     </span>
   );
-}
-
-function formatDate(dateStr: string): string {
-  return parseISODate(dateStr).toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
 }
 
 function formatBidTime(dateStr: string): string {
@@ -620,7 +612,7 @@ export function TripDetail() {
             <div className="text-xs text-outline uppercase tracking-widest mb-4">Детали</div>
             <div className="flex items-center gap-2 text-sm">
               <Calendar size={14} className="text-[#00f0ff] shrink-0" />
-              <span>{formatDate(ride.departure_date)}</span>
+              <span>{formatRideDate(ride.departure_date)}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Clock size={14} className="text-[#00f0ff] shrink-0" />
@@ -658,7 +650,7 @@ export function TripDetail() {
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <div className="text-xs text-outline uppercase tracking-widest mb-1">Начальная цена</div>
-              <div className="text-on-surface-variant font-mono text-lg">
+              <div className="text-on-surface-variant text-lg font-semibold">
                 {ride.start_price.toLocaleString('ru-RU')} ₽
               </div>
             </div>
@@ -929,7 +921,11 @@ export function TripDetail() {
             </AnimatePresence>
           </div>
         ) : isActive ? (
-          <p className="text-center text-outline text-sm py-4">Ставок пока нет — будь первым!</p>
+          <p className="text-center text-outline text-sm py-4">
+            {isOwnRide
+              ? 'Ставок пока нет — объявление ждёт откликов.'
+              : 'Ставок пока нет — будьте первым!'}
+          </p>
         ) : null}
 
         {/* Review prompt — only for the winner (passenger) */}

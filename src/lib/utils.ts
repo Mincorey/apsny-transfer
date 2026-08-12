@@ -46,3 +46,46 @@ export function pluralSeats(n: number): string {
 export function pluralTrips(n: number): string {
   return `${n} ${plural(n, 'поездка', 'поездки', 'поездок')}`;
 }
+
+/**
+ * Дата поездки в едином виде: «15 августа 2026 г.».
+ *
+ * До 12.08.2026 дата выводилась по-разному в каждом разделе: в профиле сырое
+ * «2026-08-15» прямо из базы, в «Моих поездках» «15 авг.», на карточке
+ * «15 августа 2026 г.». Человек видел одну и ту же поездку в трёх написаниях
+ * и в списках не понимал, какой это год. Формат один на весь интерфейс.
+ *
+ * @param dateStr дата в формате YYYY-MM-DD
+ */
+export function formatRideDate(dateStr: string): string {
+  return parseISODate(dateStr).toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+/** Время отправления «08:30» из «08:30:00». */
+export function formatRideTime(timeStr: string): string {
+  return (timeStr || '').slice(0, 5);
+}
+
+/** Дата и время вместе: «15 августа 2026 г., 08:30». */
+export function formatRideDateTime(dateStr: string, timeStr: string): string {
+  return `${formatRideDate(dateStr)}, ${formatRideTime(timeStr)}`;
+}
+
+/**
+ * Телефон в читаемом виде: «+7 (940) 771-80-35».
+ *
+ * Свой номер показывался как есть — «+79407779001», а номер второй стороны
+ * форматированным. Один и тот же номер выглядел по-разному на соседних экранах.
+ * Нероссийские и неполные номера возвращаются без изменений.
+ */
+export function formatPhone(raw: string | null | undefined): string {
+  const s = (raw ?? '').trim();
+  if (!s) return '';
+  const d = s.replace(/\D/g, '');
+  if (d.length !== 11 || (d[0] !== '7' && d[0] !== '8')) return s;
+  return `+7 (${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7, 9)}-${d.slice(9, 11)}`;
+}

@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { ArrowLeft, MapPin, Users, Clock, AlertCircle, Trophy, CreditCard, ReceiptText, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PUBLICATION_PRICE } from '../lib/publishRide';
-import { parseISODate } from '../lib/utils';
+import { formatRideDate, formatRideTime } from '../lib/utils';
 
 interface MyTrip {
   id: string;
@@ -51,17 +51,6 @@ const STATUS_LABELS: Record<string, string> = {
   completed: 'Завершена',
   cancelled: 'Отменена',
 };
-
-function formatDate(dateStr: string): string {
-  return parseISODate(dateStr).toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'short',
-  });
-}
-
-function formatTime(timeStr: string): string {
-  return timeStr.slice(0, 5);
-}
 
 // Неоплаченный черновик удаляется автоматически через 24ч после создания.
 function deletionCountdown(createdAt: string): string {
@@ -126,7 +115,7 @@ function TripCard({
             <div className="flex items-center gap-1">
               <Clock size={13} />
               <span>
-                {formatDate(trip.departure_date)} {formatTime(trip.departure_time)}
+                {formatRideDate(trip.departure_date)} {formatRideTime(trip.departure_time)}
               </span>
             </div>
             {trip.seats && trip.seats > 0 && (
@@ -263,7 +252,7 @@ function WonTripCard({ trip, onClick }: { trip: WonTrip; onClick: () => void }) 
           <div className="flex items-center gap-3 flex-wrap text-xs text-on-surface-variant mb-3">
             <div className="flex items-center gap-1">
               <Clock size={13} />
-              <span>{formatDate(trip.departure_date)} {formatTime(trip.departure_time)}</span>
+              <span>{formatRideDate(trip.departure_date)} {formatRideTime(trip.departure_time)}</span>
             </div>
           </div>
           <div className="flex items-center gap-2">

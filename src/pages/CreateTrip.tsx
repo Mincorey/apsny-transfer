@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, Clock, Zap, CheckCircle2, Car } from 'lucide-react';
+import { MapPin, Calendar, Clock, Zap, CheckCircle2, Car, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DatePicker } from '../components/ui/DatePicker';
 import { TimePicker } from '../components/ui/TimePicker';
 import { useToast } from '../context/ToastContext';
 import { PUBLICATION_PRICE } from '../lib/publishRide';
-import { parseISODate, plural, pluralSeats } from '../lib/utils';
+import { formatRideDate, parseISODate, plural, pluralSeats } from '../lib/utils';
 
 const BID_STEPS = [50, 100, 150, 200];
 const AUCTION_DURATIONS = [1, 3, 6, 12, 24];
@@ -171,10 +171,7 @@ export function CreateTrip() {
 
   if (loading) return null;
 
-  const formatDate = (d: string) => {
-    if (!d) return '—';
-    return parseISODate(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-  };
+  const formatDate = (d: string) => (d ? formatRideDate(d) : '—');
 
   const selectedVehicle = vehicles.find((v) => v.id === formData.vehicle_id);
 
@@ -477,6 +474,22 @@ export function CreateTrip() {
                     <div className="p-4 rounded-2xl border border-outline-variant/30 text-sm text-on-surface-variant">
                       У вас нет добавленных автомобилей.{' '}
                       <button type="button" onClick={() => navigate('/profile')} className="text-[#00f0ff] hover:underline">Добавить в профиле →</button>
+                    </div>
+                  )}
+
+                  {/* Мест в поездке больше, чем в выбранной машине. Не запрещаем —
+                      водитель может поехать на другой, — но говорим об этом вслух:
+                      раньше расхождение уходило в ленту незамеченным. */}
+                  {selectedVehicle && formData.seats > selectedVehicle.capacity && (
+                    <div
+                      role="status"
+                      className="flex items-start gap-2.5 p-3 rounded-2xl border border-amber-400/30 bg-amber-400/10"
+                    >
+                      <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
+                      <p className="text-xs text-amber-200/90 leading-relaxed">
+                        В «{selectedVehicle.make_model}» {pluralSeats(selectedVehicle.capacity)}, а в поездке
+                        указано {formData.seats}. Проверьте, все ли поместятся.
+                      </p>
                     </div>
                   )}
                 </div>

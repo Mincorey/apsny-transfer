@@ -54,6 +54,24 @@ export function NotFound() {
           <ArrowLeft size={16} />
           На главную
         </Link>
+
+        {/*
+          Второй ряд ссылок. Раньше со страницы 404 уйти можно было ровно одной
+          кнопкой — на главную. Человек, попавший сюда по битой ссылке, терял
+          вообще всю навигацию: ни ленты, ни своих поездок, ни профиля.
+          Полноценное меню сюда не ставим (страница открывается и неавторизованным),
+          но основные разделы перечисляем.
+        */}
+        <nav aria-label="Основные разделы" className="mt-8 pt-6 border-t border-outline-variant/20">
+          <p className="text-xs text-outline mb-3">Может быть, вам сюда:</p>
+          <div className="flex items-center justify-center gap-x-5 gap-y-2 flex-wrap text-sm">
+            <Link to="/" className="text-on-surface-variant hover:text-on-surface transition-colors">Лента</Link>
+            <Link to="/my-trips" className="text-on-surface-variant hover:text-on-surface transition-colors">Мои поездки</Link>
+            <Link to="/ratings" className="text-on-surface-variant hover:text-on-surface transition-colors">Рейтинги</Link>
+            <Link to="/profile" className="text-on-surface-variant hover:text-on-surface transition-colors">Профиль</Link>
+            <Link to="/about" className="text-on-surface-variant hover:text-on-surface transition-colors">О проекте</Link>
+          </div>
+        </nav>
       </motion.div>
     </div>
   );

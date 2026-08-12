@@ -102,17 +102,34 @@ export function Payment() {
                 <span className="text-on-surface-variant">Услуга</span>
                 <span className="font-medium text-right">Размещение объявления о поездке</span>
               </div>
+              {/*
+                Пока приём платежей не подключён, карточка не должна говорить
+                двумя голосами: раньше здесь стояло «Стоимость 100 ₽ / Банковская
+                карта», а сразу под ней зелёный блок «Сейчас публикация
+                бесплатная». Теперь к оплате показано честное «0 ₽», прежний
+                тариф — зачёркнутой сноской, а способ оплаты появляется только
+                когда деньги действительно берут.
+              */}
               <div className="flex items-baseline justify-between gap-3 pt-3 border-t border-outline-variant/20">
-                <span className="text-on-surface-variant">Стоимость</span>
-                <span className="text-lg font-bold">{PUBLICATION_PRICE}&nbsp;₽</span>
+                <span className="text-on-surface-variant">К оплате</span>
+                {PAYMENTS_ENABLED ? (
+                  <span className="text-lg font-bold">{PUBLICATION_PRICE}&nbsp;₽</span>
+                ) : (
+                  <span className="text-right">
+                    <span className="text-lg font-bold text-green-400">0&nbsp;₽</span>{' '}
+                    <s className="text-on-surface-variant text-sm">{PUBLICATION_PRICE}&nbsp;₽</s>
+                  </span>
+                )}
               </div>
-              <div className="flex items-baseline justify-between gap-3 pt-3 border-t border-outline-variant/20">
-                <span className="text-on-surface-variant">Способ оплаты</span>
-                <span className="font-medium text-right">
-                  Банковская карта или СБП<br />
-                  <span className="text-on-surface-variant text-xs">через {PAYMENT_PROVIDER}</span>
-                </span>
-              </div>
+              {PAYMENTS_ENABLED && (
+                <div className="flex items-baseline justify-between gap-3 pt-3 border-t border-outline-variant/20">
+                  <span className="text-on-surface-variant">Способ оплаты</span>
+                  <span className="font-medium text-right">
+                    Банковская карта или СБП<br />
+                    <span className="text-on-surface-variant text-xs">через {PAYMENT_PROVIDER}</span>
+                  </span>
+                </div>
+              )}
             </div>
 
             {!PAYMENTS_ENABLED && (
