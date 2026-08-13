@@ -1,11 +1,16 @@
 User-agent: *
 Allow: /
 
-# Приватные/функциональные разделы не индексируем
+# Приватные и функциональные разделы не индексируем: для поиска они бесполезны,
+# а часть из них показывает данные конкретного человека.
 Disallow: /profile
-Disallow: /messages
-Disallow: /conversations
 Disallow: /create
 Disallow: /my-trips
+Disallow: /notifications
+Disallow: /payment
+Disallow: /receipt
+
+# /messages и /conversations убраны: разделов нет с 10.08.2026, закрывать
+# несуществующие адреса незачем — это только сбивает с толку при чтении файла.
 
 Sitemap: https://apsny-transfer.vercel.app/sitemap.xml

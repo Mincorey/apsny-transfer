@@ -2,7 +2,7 @@
   "name": "APSNY-TRANSFER",
   "id": "/",
   "short_name": "Апсны",
-  "description": "Аукционный сервис поездок Сочи–Абхазия",
+  "description": "Аукционный сервис поездок между Россией и Абхазией",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#10131a",

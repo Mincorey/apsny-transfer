@@ -453,12 +453,17 @@ function RideSkeleton() {
 
 function AuctionTimer({ endTime }: { endTime: string | null }) {
   const [display, setDisplay] = useState('');
+  // Признак «меньше часа» считается здесь же, в такте таймера, а не в теле
+  // рендера. Раньше он вычислялся через Date.now() прямо при отрисовке —
+  // рендер переставал быть чистым, и результат зависел от момента вызова.
+  const [isUrgent, setIsUrgent] = useState(false);
 
   useEffect(() => {
     if (!endTime) return;
 
     const update = () => {
       const diff = new Date(endTime).getTime() - Date.now();
+      setIsUrgent(diff > 0 && diff < 3_600_000);
       if (diff <= 0) { setDisplay('Завершён'); return; }
       const h = Math.floor(diff / 3_600_000);
       const m = Math.floor((diff % 3_600_000) / 60_000);
@@ -472,8 +477,6 @@ function AuctionTimer({ endTime }: { endTime: string | null }) {
   }, [endTime]);
 
   if (!endTime || !display) return null;
-
-  const isUrgent = new Date(endTime).getTime() - Date.now() < 3_600_000;
 
   return (
     <div className={`flex items-center gap-1 text-xs font-mono font-bold whitespace-nowrap ${isUrgent ? 'text-red-400' : 'text-[#00f0ff]'}`}>

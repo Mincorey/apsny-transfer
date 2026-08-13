@@ -58,6 +58,20 @@
     <link rel="canonical" href="https://apsny-transfer.vercel.app/" />
     <script src="/canonical.js" defer></script>
 
+    <!--
+      Шрифты подключаются из index.css директивой @import. Браузер узнаёт про
+      них только после того, как скачает и разберёт таблицу стилей, то есть
+      соединение с сервером шрифтов открывается поздно — а на него уходит
+      DNS-запрос, TCP-рукопожатие и TLS. preconnect говорит браузеру открыть
+      это соединение сразу, параллельно с загрузкой стилей.
+
+      crossorigin на второй строке обязателен: шрифты запрашиваются в режиме
+      CORS, и без этого атрибута браузер откроет второе соединение, а
+      подготовленное не пригодится.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
     <!-- Favicons -->
     <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png?v=2" />

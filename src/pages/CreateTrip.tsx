@@ -72,6 +72,16 @@ export function CreateTrip() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  // Текущий момент держим в состоянии, а не читаем часы прямо при отрисовке.
+  // Проверка «время выезда не в прошлом» нужна на каждом рендере, а рендер
+  // обязан быть чистым: вызов Date.now() в его теле даёт результат, который
+  // меняется сам по себе, и React справедливо на это ругается. Раз в полминуты
+  // достаточно — речь о минутах, не о секундах.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
   const TOTAL_STEPS = 4;
 
   const [formData, setFormData] = useState({
@@ -128,8 +138,15 @@ export function CreateTrip() {
     );
     if (currentStep === 2) {
       if (!formData.date || !formData.time) return false;
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      return parseISODate(formData.date) >= today;
+      // Сравниваем дату вместе со временем, а не одну дату. Раньше здесь
+      // стояло только `parseISODate(date) >= today`, и выбрав сегодняшнее
+      // число с временем на два часа назад, поездку можно было опубликовать.
+      const [h, m] = formData.time.split(':').map(Number);
+      const departure = parseISODate(formData.date);
+      if (isNaN(departure.getTime()) || h === undefined || m === undefined
+          || isNaN(h) || isNaN(m)) return false;
+      departure.setHours(h, m, 0, 0);
+      return departure.getTime() > now;
     }
     if (currentStep === 3) return isPriceValid;
     return true;

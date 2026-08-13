@@ -499,7 +499,13 @@ export function TripDetail() {
     ? [1, 2, 3, 4].map((n) => ride.current_price - ride.bid_step * n).filter((a) => a > 0)
     : [1, 2, 3, 4].map((n) => ride.current_price + ride.bid_step * n);
 
-  const minBidStep = Math.max(50, ride.bid_step);
+  // Минимум для ручного ввода — шаг, назначенный автором поездки, и ничего
+  // сверх него. Раньше здесь стояло Math.max(50, ride.bid_step), и на поездке
+  // с шагом меньше 50 три источника противоречили друг другу: быстрые кнопки
+  // предлагали ставку в один шаг, поле её не принимало («мин. 50 ₽»), а база
+  // приняла бы. Форма создания разрешает шаг от 10, так что случай не
+  // умозрительный. Правило одно: сколько назначил автор, столько и минимум.
+  const minBidStep = ride.bid_step;
   const parsedDelta = parseInt(bidDelta, 10);
   const isDeltaValid = !isNaN(parsedDelta) && parsedDelta >= minBidStep;
   const computedBidAmount = isDeltaValid
