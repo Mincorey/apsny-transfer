@@ -141,11 +141,23 @@
     background: var(--color-surface); 
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--color-surface-highest); 
+    /* Было --color-surface-highest — такой переменной в @theme нет и не было
+       (есть --color-surface-container-highest). CSS на несуществующую
+       переменную не ругается: свойство просто отбрасывается, и бегунок
+       оставался прозрачным. Дорожка при этом рисовалась — со стороны это
+       выглядело как «полоса прокрутки есть, а ползунка нет», во всех
+       браузерах на WebKit и Blink, то есть у большинства.
+
+       Взят не «поверхностный» цвет, а --color-outline. Причина: на фоне
+       дорожки (#10131a) все варианты surface дают контраст 1,5–2,0:1 при
+       норме 3:1 для элементов управления — бегунок формально был бы, но
+       по-прежнему почти не виден. --color-outline даёт 5,89:1.
+       Наведение — на ступень светлее, чтобы состояние осталось различимым. */
+    background: var(--color-outline);
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-outline);
+    background: var(--color-on-surface-variant);
   }
 }
 

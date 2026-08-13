@@ -199,8 +199,21 @@ export function Profile() {
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
-      await supabase.from('users').update({ avatar_url: publicUrl }).eq('id', profile.id);
-      setProfile((prev) => prev ? { ...prev, avatar_url: publicUrl } : prev);
+
+      // Имя файла в хранилище всегда одно и то же (avatar.jpg в папке
+      // пользователя, загрузка с upsert). Значит, и публичный адрес после
+      // замены фото не меняется — а по этому адресу и браузер, и CDN уже
+      // держат прежнюю картинку. Человек загружал новое фото, страница
+      // сообщала об успехе, и показывала старое; после перезагрузки тоже,
+      // потому что в базе лежал тот же самый адрес.
+      //
+      // Добавляем к адресу метку времени: файл в хранилище по-прежнему один
+      // (место не расходуется), но адрес становится новым — кэш обходится, и
+      // новое фото видят все, а не только тот, у кого кэш пуст.
+      const bustedUrl = `${publicUrl}${publicUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
+
+      await supabase.from('users').update({ avatar_url: bustedUrl }).eq('id', profile.id);
+      setProfile((prev) => prev ? { ...prev, avatar_url: bustedUrl } : prev);
     } catch (err: any) {
       showToast('error', 'Ошибка загрузки', err.message || 'Не удалось загрузить аватар');
     } finally {
@@ -241,20 +254,27 @@ export function Profile() {
     }
     setSaving(true);
     try {
-      const { error } = await supabase.from('users').update({
-        full_name: editData.full_name,
+      // Нормализованные значения считаем ОДИН раз и используем и для записи
+      // в базу, и для состояния. Раньше это были два разных набора: в базу
+      // уходило очищенное («@vasya» → «vasya», телефон → одни цифры), а в
+      // состояние клался сырой ввод. Из-за этого до перезагрузки страница
+      // показывала одно, а в базе лежало другое, и значение «прыгало», когда
+      // человек возвращался в профиль. По всему файлу в profile хранится
+      // именно очищенное значение — маска накладывается только при заполнении
+      // формы правки (applyTelegramMask), — так что расходился здесь именно
+      // setProfile, а не запись.
+      const normalized = {
+        // Имя проверялось через trim, а записывалось без него: «  Вася  »
+        // уезжал в базу с пробелами.
+        full_name: editData.full_name.trim(),
         telegram: editData.telegram ? editData.telegram.replace(/@/g, '').trim() || null : null,
         whatsapp: editData.whatsapp ? editData.whatsapp.replace(/\D/g, '') || null : null,
         max: editData.max ? editData.max.replace(/\D/g, '') || null : null,
-      }).eq('id', profile.id);
+      };
+
+      const { error } = await supabase.from('users').update(normalized).eq('id', profile.id);
       if (error) throw error;
-      setProfile((prev) => prev ? {
-        ...prev,
-        full_name: editData.full_name,
-        telegram: editData.telegram || null,
-        whatsapp: editData.whatsapp || null,
-        max: editData.max || null,
-      } : prev);
+      setProfile((prev) => prev ? { ...prev, ...normalized } : prev);
       setEditing(false);
     } catch (err: any) {
       showToast('error', 'Не удалось сохранить профиль', err.message);

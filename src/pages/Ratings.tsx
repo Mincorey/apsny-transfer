@@ -18,32 +18,40 @@ export function Ratings() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background text-on-surface">
-      {/* Header */}
-      <header className="fixed top-0 md:top-16 w-full z-50 md:z-40 h-16 flex items-center justify-between px-4 md:px-8 bg-surface/80 backdrop-blur-2xl border-b border-white/5">
+    /*
+      Страница живёт внутри MainLayout, а тот уже даёт фон, цвет текста, шапку,
+      прокручиваемую область и контейнер с отступами. Здесь всё это было
+      объявлено второй раз: min-h-screen внутри уже прокручиваемой области
+      (страница гарантированно выше окна — прокрутка в пустоту даже при
+      коротком списке), собственная fixed-шапка со смещениями, посчитанными
+      под чужой layout, и ещё один набор отступов поверх родительских.
+
+      Теперь как у соседних страниц того же layout (Feed, Notifications):
+      обычный заголовок в потоке. Ширину в 2xl оставляю намеренно — длинные
+      строки списка на всю ширину 4xl читать неудобно.
+    */
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div className="flex items-center gap-3">
         <button
           onClick={() => (window.history.length > 2 ? navigate(-1) : navigate('/'))}
-          className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors"
+          className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors shrink-0"
         >
           <ArrowLeft size={18} aria-hidden="true" />
           Назад
         </button>
-        <div className="flex items-center gap-2 font-display font-bold">
-          <Trophy size={18} className="text-yellow-400" aria-hidden="true" />
+        <h1 className="flex items-center gap-2 text-2xl font-display font-bold ml-auto">
+          <Trophy size={20} className="text-yellow-400" aria-hidden="true" />
           Рейтинги водителей
-        </div>
-        <div className="w-16" />
-      </header>
+        </h1>
+      </div>
 
-      <main className="max-w-2xl mx-auto px-4 pt-24 md:pt-32 pb-16">
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <DriverLeaderboard currentUserId={userId} />
-        </motion.div>
-      </main>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        <DriverLeaderboard currentUserId={userId} />
+      </motion.div>
     </div>
   );
 }

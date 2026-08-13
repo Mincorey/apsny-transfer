@@ -122,15 +122,17 @@ export function UserProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-primary-container border-t-transparent rounded-full animate-spin" />
+      // Как в Profile.tsx: страница внутри MainLayout, растягивать её на всю
+      // высоту окна не нужно — layout уже даёт прокручиваемую область.
+      <div className="flex justify-center py-12">
+        <div className="w-8 h-8 border-4 border-primary-container border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (notFound || !profile) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+      <div className="flex flex-col items-center justify-center gap-4 py-16">
         <User size={48} className="text-primary-container" />
         <p className="text-white text-xl">Пользователь не найден</p>
         <button onClick={() => navigate(-1)} className="btn-mesh px-6 py-2 rounded-xl text-sm">Назад</button>
@@ -146,9 +148,19 @@ export function UserProfile() {
   const maxDigits = profile.max ? profile.max.replace(/\D/g, '') : null;
 
   return (
-    <div className="min-h-screen bg-background pb-12">
-      {/* Hero Banner — full width */}
-      <div className="relative h-44 bg-gradient-to-r from-[#7701d0]/60 via-[#00f0ff]/20 to-[#7701d0]/60 overflow-hidden">
+    /*
+      Каркас страницы даёт MainLayout: фон, прокручиваемую область, контейнер
+      с отступами. Здесь стояло min-h-screen — страница внутри уже
+      прокручиваемой области становилась выше окна, и появлялась прокрутка
+      в пустоту. Плюс подпись «full width» у баннера вводила в заблуждение:
+      внутри контейнера max-w-4xl он никакой не во всю ширину, а просто
+      прямоугольник с обрубленными углами — единственный на сайте, где все
+      остальные карточки скруглены. Приведено к тому, как это сделано на
+      своём профиле (Profile.tsx).
+    */
+    <div className="max-w-2xl mx-auto">
+      {/* Hero Banner */}
+      <div className="relative h-44 rounded-3xl bg-gradient-to-r from-[#7701d0]/60 via-[#00f0ff]/20 to-[#7701d0]/60 overflow-hidden">
         {particles.map((_, i) => (
           <motion.div
             key={i}
@@ -166,8 +178,14 @@ export function UserProfile() {
         </button>
       </div>
 
-      {/* Centered content area */}
-      <div className="max-w-2xl mx-auto px-4">
+      {/*
+        Ширина и боковые отступы теперь заданы один раз — на корне страницы и
+        в контейнере MainLayout. Здесь стоял ещё один max-w-2xl mx-auto px-4
+        поверх них. Промежуток между баннером и этим блоком намеренно нулевой:
+        аватар ниже заходит на баннер отрицательным отступом (-mt-12), и любой
+        зазор между соседями съел бы это наложение.
+      */}
+      <div>
         {/* Avatar + Name — overlaps banner */}
         <div className="relative z-10 -mt-12 mb-5 flex items-end gap-4">
           <div className="w-24 h-24 rounded-full border-4 border-[#0a0e1a] overflow-hidden flex-shrink-0 bg-gradient-to-br from-primary-container/30 to-secondary-container/30 shadow-lg">

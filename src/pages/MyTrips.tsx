@@ -398,21 +398,27 @@ export function MyTrips() {
   });
 
   return (
-    <div className="min-h-screen bg-background text-on-surface">
-      {/* Header */}
-      <header className="fixed top-0 md:top-16 w-full z-50 md:z-40 h-16 flex items-center justify-between px-4 md:px-8 bg-surface/80 backdrop-blur-2xl border-b border-white/5">
+    /*
+      Страница живёт внутри MainLayout, а тот уже даёт фон, цвет текста, шапку,
+      прокручиваемую область и контейнер с отступами. Здесь всё это было
+      объявлено второй раз: min-h-screen внутри уже прокручиваемой области,
+      собственная fixed-шапка со смещениями под чужой layout и ещё один набор
+      отступов поверх родительских. Теперь как у соседних страниц того же
+      layout (Feed, Notifications) — заголовок в потоке.
+    */
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div className="flex items-center gap-3">
         <button
           onClick={() => (window.history.length > 2 ? navigate(-1) : navigate('/'))}
-          className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors"
+          className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors shrink-0"
         >
           <ArrowLeft size={18} />
           Назад
         </button>
-        <div className="font-display font-bold">Мои поездки</div>
-        <div className="w-16" />
-      </header>
+        <h1 className="text-2xl font-display font-bold ml-auto">Мои поездки</h1>
+      </div>
 
-      <main className="max-w-2xl mx-auto px-4 pt-24 md:pt-32 pb-24 md:pb-8">
+      <div>
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
           {(['active', 'completed', 'won'] as TripsTab[]).map((t) => (
@@ -489,7 +495,7 @@ export function MyTrips() {
             </div>
           </AnimatePresence>
         )}
-      </main>
+      </div>
     </div>
   );
 }

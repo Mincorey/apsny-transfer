@@ -12,6 +12,21 @@ import { formatRideDate, parseISODate, plural, pluralSeats } from '../lib/utils'
 const BID_STEPS = [50, 100, 150, 200];
 const AUCTION_DURATIONS = [1, 3, 6, 12, 24];
 
+/**
+ * Границы полей формы. Повторяют ограничения базы, наложенные миграцией
+ * 20260813_bid_bounds_and_ride_limits.sql, — держать их согласованными
+ * обязательно: база отказывает кодом 23514 с английским текстом, и если
+ * форма пропустит значение, которое база не примет, человек увидит именно
+ * его. Проверка здесь — вежливость, ограничение в базе — защита.
+ *
+ * Потолок цены не бизнес-лимит: реальные поездки идут по 4–7 тысяч, миллион
+ * стоит как страховка от опечаток и мусора.
+ */
+const MIN_PRICE = 1;
+const MAX_PRICE = 1_000_000;
+const MIN_BID_STEP = 10;
+const MAX_BID_STEP = 5000;
+
 const ABKHAZIA_CITIES = ['сухум', 'гагра', 'пицунда', 'новый афон', 'гудаута', 'очамчира', 'гал', 'ткварчели'];
 const RUSSIA_CITIES = ['сочи', 'адлер', 'краснодар', 'москва', 'санкт-петербург', 'новороссийск', 'анапа'];
 
@@ -99,6 +114,12 @@ export function CreateTrip() {
     });
   }, []);
 
+  // Цена в состоянии хранится строкой (значение input), поэтому проверяем
+  // и на «вообще число», и на попадание в границы.
+  const parsedPrice = parseFloat(formData.price);
+  const isPriceValid =
+    !isNaN(parsedPrice) && parsedPrice >= MIN_PRICE && parsedPrice <= MAX_PRICE;
+
   const canGoNext = (): boolean => {
     if (currentStep === 1) return !!(
       formData.origin.trim() &&
@@ -110,7 +131,7 @@ export function CreateTrip() {
       const today = new Date(); today.setHours(0, 0, 0, 0);
       return parseISODate(formData.date) >= today;
     }
-    if (currentStep === 3) return !!(formData.price && parseFloat(formData.price) > 0);
+    if (currentStep === 3) return isPriceValid;
     return true;
   };
 
@@ -396,6 +417,8 @@ export function CreateTrip() {
                   <input
                     id="trip-price"
                     type="number"
+                    min={MIN_PRICE}
+                    max={MAX_PRICE}
                     value={formData.price}
                     onChange={e => setFormData({ ...formData, price: e.target.value })}
                     className="w-full pl-11 pr-4 py-4 rounded-2xl input-glass text-2xl font-bold text-primary-container placeholder:text-outline/50 transition-all"
@@ -405,6 +428,15 @@ export function CreateTrip() {
                 <p className="text-sm text-on-surface-variant mt-1 px-1">
                   {role === 'passenger' ? 'Водители будут предлагать меньше.' : 'Пассажиры могут предложить больше.'}
                 </p>
+                {/* Границы совпадают с ограничениями базы (миграция
+                    20260813_bid_bounds_and_ride_limits). Подсказка нужна
+                    именно здесь: без неё человек нажал бы «Далее» и получил
+                    отказ сервера, не понимая, что не так. */}
+                {formData.price !== '' && !isPriceValid && (
+                  <p className="text-sm text-error mt-1 px-1">
+                    Цена должна быть от {MIN_PRICE} до {MAX_PRICE.toLocaleString('ru-RU')} ₽
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -422,10 +454,18 @@ export function CreateTrip() {
                     </button>
                   ))}
                   <input
-                    type="number" min="10"
-                    aria-label="Свой шаг ставки в рублях"
+                    type="number" min={MIN_BID_STEP} max={MAX_BID_STEP}
+                    aria-label={`Свой шаг ставки в рублях, от ${MIN_BID_STEP} до ${MAX_BID_STEP}`}
                     value={BID_STEPS.includes(formData.bid_step) ? '' : formData.bid_step}
-                    onChange={e => { const v = parseInt(e.target.value); if (!isNaN(v) && v >= 10) setFormData({ ...formData, bid_step: v }); }}
+                    // Верхняя граница появилась вместе с ограничением базы:
+                    // раньше сюда проходило любое число, и поездка с шагом
+                    // больше собственной цены становилась неторгуемой.
+                    onChange={e => {
+                      const v = parseInt(e.target.value);
+                      if (!isNaN(v) && v >= MIN_BID_STEP && v <= MAX_BID_STEP) {
+                        setFormData({ ...formData, bid_step: v });
+                      }
+                    }}
                     placeholder="Свой"
                     className="flex-1 min-w-[80px] px-4 py-2 rounded-xl input-glass text-sm font-bold text-on-surface placeholder:text-outline/50"
                   />
