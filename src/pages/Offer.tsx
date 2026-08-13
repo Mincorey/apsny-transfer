@@ -1,5 +1,6 @@
 import { InfoLayout, Section } from '../components/layout/InfoLayout';
 import { SITE } from '../lib/siteInfo';
+import { PUBLICATION_PRICE } from '../lib/publishRide';
 
 export function Offer() {
   return (
@@ -26,7 +27,7 @@ export function Offer() {
 
       <Section title="2. Стоимость услуги">
         <p>
-          Стоимость публикации одного объявления — <span className="text-on-surface font-medium">100 ₽</span>,
+          Стоимость публикации одного объявления — <span className="text-on-surface font-medium">{PUBLICATION_PRICE}&nbsp;₽</span>,
           независимо от маршрута и даты. Стоимость отображается до оплаты.
         </p>
         <p className="text-on-surface font-medium">

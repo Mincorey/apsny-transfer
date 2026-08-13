@@ -16,20 +16,21 @@ export function TopNav() {
     <>
       <header className="hidden md:flex fixed top-0 left-0 right-0 z-50 h-16 items-center justify-center px-4 lg:px-6 bg-surface/80 backdrop-blur-2xl border-b border-outline-variant/20">
         {/*
-          Колонки 1fr | auto | 1fr, а не auto | 1fr | auto.
-          При «auto» по краям середина зависела от ширины логотипа и кнопки
-          выхода — они разные, и меню съезжало вправо. Равные боковые колонки
-          дают настоящий центр в любом состоянии.
+          Меню центрируется абсолютно, а не колонкой сетки.
+          Сначала я поставил равные колонки 1fr | auto | 1fr — центр стал
+          настоящим, но боковые колонки сжались до ширины остатка и придавили
+          логотип, он полез под меню. Здесь края живут в потоке и занимают
+          сколько нужно, а меню висит ровно по середине шапки независимо от них.
         */}
-        <div className="w-full max-w-5xl grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-          <NavLink to="/" className="flex items-center gap-2 shrink-0 justify-self-start">
+        <div className="relative w-full max-w-5xl xl:max-w-6xl flex items-center justify-between gap-4">
+          <NavLink to="/" className="flex items-center gap-2 shrink-0">
             <img src="/icons/icon-192.png" alt="" className="w-7 h-7 rounded-lg" />
             <span className="text-lg font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary-container to-secondary-container whitespace-nowrap">
               APSNY-TRANSFER
             </span>
           </NavLink>
 
-          <nav className="flex items-center justify-center gap-0.5 justify-self-center">
+          <nav className="absolute left-1/2 -translate-x-1/2 flex items-center gap-0.5">
             <NavItem to="/" icon={<LayoutDashboard size={18} />} label="Лента" />
             <NavItem to="/create" icon={<PlusCircle size={18} />} label="Создать" />
             <NavItem to="/notifications" icon={<Bell size={18} />} label="Уведомления" badge={unreadNotifications} />
@@ -48,7 +49,7 @@ export function TopNav() {
             onClick={() => setShowLogoutModal(true)}
             title="Выйти"
             aria-label="Выйти из аккаунта"
-            className="flex items-center justify-center w-10 h-10 rounded-xl text-on-surface-variant hover:text-error transition-colors hover:bg-error/10 shrink-0 justify-self-end"
+            className="flex items-center justify-center w-10 h-10 rounded-xl text-on-surface-variant hover:text-error transition-colors hover:bg-error/10 shrink-0"
           >
             <LogOut size={18} />
           </button>

@@ -1,5 +1,9 @@
 import { InfoLayout, Section } from '../components/layout/InfoLayout';
 import { SITE } from '../lib/siteInfo';
+// Цену берём из той же константы, что и касса. Раньше «100 ₽» стояло в тексте
+// вручную — при смене тарифа юридические документы разошлись бы с реальным
+// счётом, а это как раз тот случай, когда расхождение стоит дорого.
+import { PUBLICATION_PRICE } from '../lib/publishRide';
 
 export function Terms() {
   return (
@@ -52,7 +56,7 @@ export function Terms() {
           кнопку оплаты, вы акцептуете условия настоящего раздела как публичной оферты.
         </p>
         <p>
-          Установленный размер платы — <span className="text-on-surface font-medium">100 ₽ за публикацию
+          Установленный размер платы — <span className="text-on-surface font-medium">{PUBLICATION_PRICE}&nbsp;₽ за публикацию
           одной поездки</span>. <span className="text-on-surface font-medium">В настоящее время, на период
           подключения платёжной системы ЮMoney, публикация поездок временно бесплатна — плата не взимается,
           платёжные данные не запрашиваются.</span> Оплачивается

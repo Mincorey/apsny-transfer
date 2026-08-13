@@ -135,10 +135,23 @@ const STATS_TTL_MS = 60 * 60 * 1000; // 1 час
 
 type StatsRaw = { completedCount: number; userCount: number; cityCount: number; avgRating: string };
 
+/**
+ * Город из адреса: «Сочи, Аэропорт» → «сочи».
+ *
+ * Адрес пользователь пишет свободно, вплоть до подъезда. Для счётчика городов
+ * важна только первая часть — до запятой; регистр приводим, чтобы «Сухум»
+ * и «сухум» не считались дважды.
+ */
+function cityOf(place: string | null | undefined): string {
+  return (place ?? '').split(',')[0]?.trim().toLowerCase() ?? '';
+}
+
 function buildStats(r: StatsRaw) {
+  // Числа показываем как есть. Раньше к ним приписывался плюс — «7+ поездок»
+  // при ровно семи. Плюс означает «больше чем», а больше не было.
   return [
-    { value: `${r.completedCount}+`, label: 'Поездок завершено', icon: Route },
-    { value: `${r.userCount}+`, label: 'Пользователей', icon: Users },
+    { value: r.completedCount.toString(), label: 'Поездок завершено', icon: Route },
+    { value: r.userCount.toString(), label: 'Пользователей', icon: Users },
     { value: r.cityCount > 0 ? r.cityCount.toString() : '—', label: 'Городов', icon: MapPin },
     { value: r.avgRating, label: 'Средний рейтинг', icon: Star },
   ];
@@ -193,13 +206,23 @@ export function Auth() {
       const [completedRes, usersRes, ridesRes, ratingRes] = await Promise.all([
         supabase.from('rides').select('id', { count: 'exact' }).eq('status', 'completed'),
         supabase.from('users').select('id', { count: 'exact' }),
-        supabase.from('rides').select('destination'),
+        supabase.from('rides').select('origin, destination'),
         supabase.from('users').select('rating').gt('rating', 0),
       ]);
 
       const completedCount = completedRes.count || 0;
       const userCount = usersRes.count || 0;
-      const cities = new Set(ridesRes.data?.map(r => r.destination) || []);
+      // Считаем города, а не строки адресов. Раньше здесь был набор уникальных
+      // значений поля «куда» целиком: «Сочи, Аэропорт» и «Сочи, центр» шли за
+      // два разных города, а пункты отправления не учитывались вовсе — цифра
+      // на главной завышалась от каждого нового адреса.
+      const cities = new Set<string>();
+      for (const r of ridesRes.data ?? []) {
+        for (const place of [r.origin, r.destination]) {
+          const city = cityOf(place);
+          if (city) cities.add(city);
+        }
+      }
       const cityCount = cities.size;
 
       const ratings = ratingRes.data?.map((u: { rating: number }) => Number(u.rating)) ?? [];
@@ -316,21 +339,21 @@ export function Auth() {
 
       {/* Header */}
       {/*
-        Сетка в три колонки, а не justify-between.
-        Логотип шире кнопки «Войти», поэтому при justify-between средний блок
-        оказывался смещён вправо примерно на 70 пикселей — глаз это ловит сразу.
-        Колонки 1fr | auto | 1fr дают настоящий центр независимо от того,
-        что лежит по краям.
+        Меню центрируется абсолютно, края живут в потоке.
+        При обычном justify-between середина зависела от того, что по краям:
+        логотип шире кнопки «Войти», и меню уезжало вправо примерно на семьдесят
+        пикселей. Абсолютное центрирование даёт настоящую середину шапки и при
+        этом не сжимает логотип, как это делали бы равные колонки сетки.
       */}
       <header className="fixed top-0 w-full z-50 flex justify-center items-center px-6 md:px-12 h-20 bg-surface/80 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,219,233,0.15)] transition-all">
-        <div className="w-full max-w-7xl grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-          <div className="flex items-center gap-2 justify-self-start">
+        <div className="relative w-full max-w-7xl flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 shrink-0">
             <img src="/icons/icon-192.png" alt="" className="w-8 h-8 rounded-lg" />
             <span className="font-display text-xl font-bold text-primary-fixed-dim tracking-tight whitespace-nowrap">APSNY-TRANSFER</span>
           </div>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-3 justify-self-center">
+          <nav className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-3">
           <button
             onClick={() => { setIsLogin(false); setRole('passenger'); scrollToAuth(); }}
             className="flex items-center h-10 gap-2 px-5 rounded-xl text-sm font-bold uppercase tracking-widest transition-all duration-200 border border-[#00f0ff]/40 text-[#00f0ff] bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 hover:border-[#00f0ff]/80 hover:shadow-[0_0_16px_rgba(0,240,255,0.3)]"
@@ -347,7 +370,7 @@ export function Auth() {
           </button>
         </nav>
 
-        <div className="flex items-center gap-3 justify-self-end">
+        <div className="flex items-center gap-3 shrink-0">
           <button
             onClick={scrollToAuth}
             className="hidden md:flex items-center h-10 px-6 rounded-xl bg-surface-container hover:bg-white/10 text-on-surface font-semibold transition-colors border border-white/10"
@@ -500,19 +523,24 @@ export function Auth() {
               transition={{ duration: 0.7, delay: 0.1 }}
               className="text-5xl md:text-7xl font-display font-bold leading-tight"
             >
-              Динамические трансферы <br />
+              Поездки РФ ↔ Абхазия <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-fixed to-secondary-fixed">
                 по вашей цене.
               </span>
             </motion.h1>
 
+            {/* Прежний текст был набором слов без содержания: «ультрасовременная
+                платформа междугородней логистики», «ощутите истинную
+                эффективность транспорта». Здесь в трёх фразах сказано, что
+                человек делает и что получает. */}
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-lg text-on-surface-variant max-w-2xl leading-relaxed"
             >
-              Ультрасовременная платформа междугородней логистики. Делайте ставки на премиальные маршруты, монетизируйте пустые обратные рейсы и ощутите истинную эффективность транспорта через прозрачные аукционы.
+              Пассажир называет свою цену, водители предлагают меньше. Выбираете сами —
+              по цене, рейтингу и машине. Между вами никаких посредников.
             </motion.p>
 
             <motion.div
@@ -554,27 +582,33 @@ export function Auth() {
                     <Route className="text-primary-fixed-dim" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold">Сухум → Сочи</h3>
-                    <p className="text-xs text-on-surface-variant uppercase tracking-widest mt-1">Экспресс маршрут</p>
+                    <h3 className="text-lg font-bold">Гагра → Сочи, Аэропорт</h3>
+                    <p className="text-xs text-on-surface-variant uppercase tracking-widest mt-1">Запрос пассажира</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-tertiary-fixed-dim animate-pulse font-mono tracking-widest">00:45 СЕК</p>
+                  <p className="text-xs text-tertiary-fixed-dim animate-pulse font-mono tracking-widest">ТОРГ ИДЁТ</p>
                 </div>
               </div>
 
+              {/*
+                Шкала показывает то, что происходит на самом деле: пассажир
+                назвал 5 000, водители сбивают цену вниз. Раньше здесь была
+                полоса, растущая от 2 000 к 5 000, с подписью «Прямой: 5000 ₽» —
+                она изображала торг наоборот и вводила в заблуждение.
+              */}
               <div className="bg-surface-container-low/50 rounded-xl p-5 border border-white/5">
                 <div className="flex justify-between items-end mb-2">
-                  <span className="text-sm text-on-surface-variant">Текущая ставка</span>
+                  <span className="text-sm text-on-surface-variant">Лучшее предложение</span>
                   <span className="text-3xl font-display font-bold text-primary">3 500 ₽</span>
                 </div>
                 <div className="relative h-2 bg-surface-container-highest rounded-full mt-6">
-                  <div className="absolute left-0 top-0 h-full w-[65%] bg-gradient-to-r from-primary-fixed-dim/20 to-primary-container rounded-full"></div>
-                  <div className="absolute left-[65%] top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-[0_0_10px_#00f0ff]"></div>
+                  <div className="absolute left-0 top-0 h-full w-[70%] bg-gradient-to-r from-primary-fixed-dim/20 to-primary-container rounded-full"></div>
+                  <div className="absolute left-[70%] top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-[0_0_10px_#00f0ff]"></div>
                 </div>
                 <div className="flex justify-between mt-3 text-xs text-outline font-mono">
-                  <span>Старт: 2000 ₽</span>
-                  <span>Прямой: 5000 ₽</span>
+                  <span>Начали с 5 000 ₽</span>
+                  <span className="text-tertiary-fixed-dim">сбили 1 500 ₽</span>
                 </div>
               </div>
             </div>
@@ -618,23 +652,24 @@ export function Auth() {
                     role="tab"
                     aria-selected={active}
                     onClick={() => setHowRole(tab.key)}
-                    className="relative flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold uppercase tracking-widest transition-colors"
-                    style={{ color: active ? tab.accent : undefined }}
+                    // Подсветка активной вкладки — обычный фон с переходом.
+                    // Раньше здесь была «переезжающая» плашка на layoutId; вместе
+                    // с AnimatePresence ниже она подвешивала анимацию, и шаги
+                    // переставали переключаться. Простой вариант надёжнее.
+                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold uppercase tracking-widest border transition-all duration-200"
+                    style={
+                      active
+                        ? {
+                            color: tab.accent,
+                            background: `${tab.accent}1a`,
+                            borderColor: `${tab.accent}66`,
+                            boxShadow: `0 0 20px ${tab.accent}26`,
+                          }
+                        : { color: 'var(--color-on-surface-variant)', borderColor: 'transparent' }
+                    }
                   >
-                    {active && (
-                      <motion.span
-                        layoutId="how-role-pill"
-                        transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-                        className="absolute inset-0 rounded-xl border"
-                        style={{
-                          background: `${tab.accent}1a`,
-                          borderColor: `${tab.accent}66`,
-                          boxShadow: `0 0 20px ${tab.accent}33`,
-                        }}
-                      />
-                    )}
-                    <tab.icon size={15} className={`relative z-10 ${active ? '' : 'text-on-surface-variant'}`} />
-                    <span className={`relative z-10 ${active ? '' : 'text-on-surface-variant'}`}>{tab.label}</span>
+                    <tab.icon size={15} />
+                    <span>{tab.label}</span>
                   </button>
                 );
               })}
@@ -648,12 +683,14 @@ export function Auth() {
               aria-hidden="true"
               className="hidden lg:block absolute left-[12.5%] right-[12.5%] top-7 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
             />
-            <AnimatePresence mode="wait">
-              <motion.ol
+            {/* Без AnimatePresence: смены key достаточно, чтобы React пересоздал
+                список, а motion проиграл появление. Обёртка с mode="wait" ждала
+                завершения ухода старого набора — и не дожидалась, из-за чего
+                шаги замирали на первой роли. */}
+            <motion.ol
                 key={howRole}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.25 }}
                 className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10"
               >
@@ -672,8 +709,7 @@ export function Auth() {
                     <p className="text-on-surface-variant text-sm leading-relaxed max-w-[260px]">{step.desc}</p>
                   </li>
                 ))}
-              </motion.ol>
-            </AnimatePresence>
+            </motion.ol>
           </div>
         </div>
       </section>
@@ -739,7 +775,9 @@ export function Auth() {
                       Через границу
                     </span>
                   )}
-                  <span className="ml-auto flex items-center gap-1 text-primary-fixed font-semibold opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0">
+                  {/* Подпись видна всегда: на телефоне наведения не бывает,
+                      и без неё карточка не читается как нажимаемая. */}
+                  <span className="ml-auto flex items-center gap-1 text-primary-fixed font-semibold transition-transform duration-300 group-hover:translate-x-1">
                     Смотреть поездки
                     <ChevronRight size={15} />
                   </span>
