@@ -14,6 +14,20 @@ import { pluralTrips } from '../lib/utils';
 // (которая ещё и рассылалась всем зрителям ленты — веерная нагрузка).
 const FEED_POLL_INTERVAL_MS = 15_000; // обновление раз в 15 секунд
 
+// Забытая вкладка опрашивается вчетверо реже.
+//
+// Опрос уже останавливается, когда вкладка скрыта, но самый частый случай —
+// вкладка на виду, а человек занят чем-то другим. Такие вкладки и составляют
+// большинство при большом числе пользователей, и каждая из них раз в 15 секунд
+// просит у сервера ленту, которую никто не читает. По замеру
+// (НАГРУЗОЧНЫЙ-ТЕСТ-2026-08-13.md) опрос ленты — это 52% всех запросов
+// приложения и почти весь его исходящий трафик.
+//
+// Возвращение к обычному темпу мгновенное: любое действие пользователя или
+// переключение на вкладку сразу обновляет ленту.
+const FEED_IDLE_AFTER_MS = 5 * 60_000;  // сколько бездействия считаем «отошёл»
+const FEED_IDLE_INTERVAL_MS = 60_000;   // темп опроса в это время
+
 interface RideCreator {
   id: string;
   full_name: string;
@@ -174,24 +188,45 @@ export function Feed({ feedType }: { feedType?: 'offer' | 'request' }) {
   // Живая цена важна на странице самой поездки; в ленте достаточно периодического обновления.
   useEffect(() => {
     let cancelled = false;
+    let lastActivity = Date.now();
+    let lastFetch = Date.now();
 
+    const markActive = () => { lastActivity = Date.now(); };
+
+    // Таймер тикает всегда раз в 15 секунд, а решение «пора или рано» принимает
+    // сама функция. Так проще, чем пересоздавать интервал на каждое движение
+    // мыши, и не оставляет висящих таймеров.
     const refresh = () => {
       if (cancelled) return;
       // Не опрашиваем, пока вкладка скрыта — экономим запросы.
       if (typeof document !== 'undefined' && document.hidden) return;
+      const idle = Date.now() - lastActivity > FEED_IDLE_AFTER_MS;
+      const needed = idle ? FEED_IDLE_INTERVAL_MS : FEED_POLL_INTERVAL_MS;
+      // Допуск в полсекунды: таймеры браузера неточны, и без него каждый
+      // четвёртый тик в режиме «отошёл» пропускался бы впустую.
+      if (Date.now() - lastFetch < needed - 500) return;
+      lastFetch = Date.now();
       fetchRides(lastTypeRef.current);
     };
 
     const intervalId = setInterval(refresh, FEED_POLL_INTERVAL_MS);
     const onVisibility = () => {
-      if (typeof document !== 'undefined' && !document.hidden) refresh();
+      if (typeof document !== 'undefined' && !document.hidden) {
+        // Вернулись на вкладку — это действие пользователя, обновляем сразу.
+        markActive();
+        lastFetch = 0;
+        refresh();
+      }
     };
     document.addEventListener('visibilitychange', onVisibility);
+    const activityEvents: (keyof WindowEventMap)[] = ['pointerdown', 'keydown', 'scroll'];
+    activityEvents.forEach((e) => window.addEventListener(e, markActive, { passive: true }));
 
     return () => {
       cancelled = true;
       clearInterval(intervalId);
       document.removeEventListener('visibilitychange', onVisibility);
+      activityEvents.forEach((e) => window.removeEventListener(e, markActive));
     };
   }, [fetchRides]);
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getOptimizedImageUrl } from '../lib/imageOptimization';
@@ -46,6 +46,19 @@ interface TripWinner {
   contacts_unlocked?: boolean;
 }
 
+// Сколько ставок показываем в истории.
+//
+// Раньше и карточка, и обновление по событию тянули ВСЕ ставки поездки. Беда
+// не в весе одного ответа, а в том, кто его запрашивает: страница подписана на
+// вставку ставок, поэтому каждая новая ставка будит всех зрителей, и каждый
+// заново скачивает полный список. На замере (см. НАГРУЗОЧНЫЙ-ТЕСТ-2026-08-13.md)
+// поездка с 300 ставками — это 101 КБ на запрос; пятьдесят зрителей и ставка
+// раз в десять секунд дают около 4 Мбит/с с одной поездки.
+//
+// Двадцати хватает: дальше в истории смотреть нечего, а полное число ставок
+// приходит в ride.bids_count и показывается в заголовке.
+const BIDS_LIMIT = 20;
+
 const AMENITY_LABELS: Record<string, { icon: string; label: string }> = {
   ac:        { icon: '❄️', label: 'Кондиционер' },
   drinks:    { icon: '🥤', label: 'Напитки' },
@@ -74,6 +87,9 @@ interface TripDetailRide {
   creator_id: string;
   status: string;
   created_at: string;
+  // Денормализованный счётчик ставок (ведётся в place_bid). Нужен, чтобы
+  // заголовок истории показывал полное число, когда в списке только последние.
+  bids_count: number;
   creator: TripCreator | null;
   winner: TripWinner | null;
 }
@@ -212,6 +228,10 @@ export function TripDetail() {
 
   const [ride, setRide] = useState<TripDetailRide | null>(null);
   const [bids, setBids] = useState<BidEntry[]>([]);
+  // Автор поездки, доступный изнутри подписки на ставки. Подписка заводится
+  // один раз и «запомнила» бы обычную переменную такой, какой она была в момент
+  // запуска; ссылка обновляется вместе с поездкой и всегда актуальна.
+  const creatorIdRef = useRef<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -245,9 +265,14 @@ export function TripDetail() {
       .from('bids')
       .select('*, bidder:users!bidder_id(id, full_name, avatar_url)')
       .eq('ride_id', id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(BIDS_LIMIT);
     setBids((data as BidEntry[]) || []);
   }, [id]);
+
+  useEffect(() => {
+    creatorIdRef.current = ride?.creator_id ?? null;
+  }, [ride?.creator_id]);
 
   useEffect(() => {
     if (!id) return;
@@ -305,15 +330,18 @@ export function TripDetail() {
         filter: `ride_id=eq.${id}`,
       }, (payload) => {
         fetchBids();
-        // Notify the ride creator about a new bid
+        // Тост о новой ставке — только автору поездки.
+        //
+        // Раньше здесь на каждое событие уходил отдельный запрос в базу за
+        // creator_id. При этом автор поездки уже загружен и лежит в ссылке
+        // выше, а событие приходит ВСЕМ зрителям страницы: на аукционе с
+        // полусотней зрителей одна ставка порождала полсотни лишних запросов.
+        // getSession сети не касается — читает уже выданный токен локально.
         supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session?.user?.id) {
-            supabase.from('rides').select('creator_id').eq('id', id).single().then(({ data: r }) => {
-              if (r?.creator_id === session.user!.id) {
-                const amount = (payload.new as any).amount;
-                showToast('bid', 'Новая ставка!', `${Number(amount).toLocaleString('ru-RU')} ₽`);
-              }
-            });
+          const uid = session?.user?.id;
+          if (uid && creatorIdRef.current === uid) {
+            const amount = (payload.new as { amount: number }).amount;
+            showToast('bid', 'Новая ставка!', `${Number(amount).toLocaleString('ru-RU')} ₽`);
           }
         });
       })
@@ -477,7 +505,14 @@ export function TripDetail() {
   const computedBidAmount = isDeltaValid
     ? isRequest ? ride.current_price - parsedDelta : ride.current_price + parsedDelta
     : null;
-  const canAcceptPrice = canBid && bids.length === 0;
+  // Полное число ставок берём из счётчика поездки: в списке лежат только
+  // последние BIDS_LIMIT. Через max — на случай, если счётчик отстал от
+  // фактических записей; тогда покажем хотя бы то, что видим.
+  const totalBids = Math.max(ride.bids_count ?? 0, bids.length);
+  // Принять стартовую цену можно только до первой ставки. Считаем по полному
+  // счётчику, а не по длине списка: если список почему-то не загрузился,
+  // кнопка не должна появиться на поездке, где ставки уже есть.
+  const canAcceptPrice = canBid && totalBids === 0;
   // Последняя ставка — первая в списке. Если она наша, база не даст поставить
   // ещё раз («дождитесь другого участника»), поэтому кнопки перебивания не
   // показываем: раньше они предлагались и всегда упирались в эту ошибку.
@@ -872,8 +907,13 @@ export function TripDetail() {
         {bids.length > 0 ? (
           <div className="glass-card rounded-3xl p-5 space-y-3">
             <div className="text-xs text-outline uppercase tracking-widest">
-              История ставок ({bids.length})
+              История ставок ({totalBids})
             </div>
+            {totalBids > bids.length && (
+              <div className="text-xs text-outline/70">
+                Показаны последние {bids.length}
+              </div>
+            )}
             <AnimatePresence mode="popLayout">
               {bids.map((bid, idx) => {
                 const isFirst = idx === 0;

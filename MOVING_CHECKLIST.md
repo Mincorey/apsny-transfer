@@ -132,6 +132,63 @@ server {
 
 Сборка: `npm ci && npm run build`, содержимое `dist/` — в `/var/www/apsny/dist`.
 
+### 6.1 Сжатие ответов API — не забыть
+
+Блок выше отдаёт статику, и `gzip` в нём есть. Но приложение живёт не статикой:
+основной трафик — это ответы API, а они идут не через этот блок, а через Kong,
+и **Kong по умолчанию ничего не сжимает**.
+
+Сейчас сжатие делают за вас Supabase и Vercel. После переезда оно исчезнет молча:
+сайт будет работать, просто съест канал. Насколько — замерено
+(`НАГРУЗОЧНЫЙ-ТЕСТ-2026-08-13.md`):
+
+| Ответ ленты | Размер | Трафик при 1000 одновременных вкладок |
+|---|---|---|
+| без сжатия | 33 982 Б | 17,7 Мбит/с |
+| gzip | 4 789 Б | **2,5 Мбит/с** |
+
+**В семь раз.** При тарифном канале 100 Мбит/с это разница между «запас на годы»
+и «упрёмся на трёх тысячах пользователей».
+
+API нужно проксировать через nginx и сжимать там:
+
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name api.apsny-transfer.ru;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;   # Kong из docker-compose Supabase
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Websocket для Realtime — без этого подписки на странице поездки
+        # не поднимутся.
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade    $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+
+    gzip            on;
+    gzip_proxied    any;          # без этого проксированные ответы не сжимаются
+    gzip_types      application/json;
+    gzip_min_length 512;          # мелочь сжимать дороже, чем отдать как есть
+    gzip_comp_level 5;            # выше — заметно дороже по CPU, выигрыш копеечный
+}
+```
+
+Ключевая строка — `gzip_proxied any`. Без неё nginx сжимает только то, что отдаёт
+сам, а ответы от Kong проходят мимо, и всё остальное настроено впустую.
+
+Проверить после настройки:
+
+```bash
+curl -s -H "Accept-Encoding: gzip" -o /dev/null -w '%{size_download}\n' \
+     "https://api.apsny-transfer.ru/rest/v1/rides?select=id&limit=50"
+```
+
 ---
 
 ## 7. Обязательное после переезда
