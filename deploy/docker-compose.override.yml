@@ -1,0 +1,66 @@
+# Дополнение к официальному docker-compose Supabase.
+#
+# Кладётся рядом с ним (в папку docker из репозитория supabase/supabase) и
+# применяется автоматически: docker compose up -d подхватит оба файла.
+# Свой compose писать не нужно — этот только отключает лишнее и ставит
+# ограничения памяти.
+#
+# ЗАЧЕМ. По замерам (НАГРУЗОЧНЫЙ-ТЕСТ-2026-08-13.md) узкое место сервера —
+# не процессор, а память: сам стек Supabase съедает 4–6 ГБ, ещё не обслужив
+# ни одного пользователя. На 8 ГБ это разница между «комфортно» и «впритык».
+
+services:
+
+  # Logflare — самый прожорливый контейнер сборки (1–1,5 ГБ вместе с vector).
+  # На старте не нужен: журналы контейнеров смотрятся через docker logs.
+  analytics:
+    profiles: ["never"]
+
+  # Сборщик журналов для analytics. Без него бессмысленен.
+  vector:
+    profiles: ["never"]
+
+  # Панель управления. Наружу не публиковать ни при каких условиях:
+  # она ходит в базу с полными правами. Если нужна — только через
+  # ssh-туннель на localhost.
+  studio:
+    profiles: ["never"]
+
+  # Дальше — ограничения памяти. Смысл не в экономии, а в том, чтобы один
+  # контейнер, сорвавшись, не утянул за собой весь сервер: без лимитов ядро
+  # выбирает жертву для OOM-killer само, и это вполне может оказаться
+  # PostgreSQL.
+
+  db:
+    deploy:
+      resources:
+        limits:
+          memory: 3G      # при shared_buffers 2 ГБ + рабочая память соединений
+    shm_size: 512mb       # маловато по умолчанию: параллельные запросы упираются
+
+  auth:
+    deploy: { resources: { limits: { memory: 256M } } }
+
+  rest:
+    deploy: { resources: { limits: { memory: 256M } } }
+
+  storage:
+    deploy: { resources: { limits: { memory: 512M } } }
+
+  imgproxy:
+    deploy: { resources: { limits: { memory: 512M } } }
+
+  kong:
+    deploy: { resources: { limits: { memory: 512M } } }
+
+  meta:
+    deploy: { resources: { limits: { memory: 256M } } }
+
+  functions:
+    deploy: { resources: { limits: { memory: 512M } } }
+
+  # Realtime поднимать нужно: карточка поездки подписана на изменения ставок
+  # и статуса (TripDetail.tsx). Лента обновляется опросом и без него живёт,
+  # а вот живая цена на карточке — нет.
+  realtime:
+    deploy: { resources: { limits: { memory: 512M } } }
