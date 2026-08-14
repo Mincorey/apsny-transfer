@@ -11,6 +11,7 @@ import { PublicLayout } from './components/layout/PublicLayout';
 import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import { UpdatePrompt } from './components/UpdatePrompt';
 import { Session } from '@supabase/supabase-js';
 
 const Auth = lazy(() => import('./pages/Auth').then((m) => ({ default: m.Auth })));
@@ -174,6 +175,7 @@ export default function App() {
           </Suspense>
           </NotificationBadgeProvider>
           <PWAInstallPrompt />
+          <UpdatePrompt />
         </BrowserRouter>
       </ToastProvider>
     </ErrorBoundary>
