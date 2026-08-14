@@ -108,12 +108,12 @@ export function PaidServices() {
               </h2>
             </div>
             <p className="text-sm text-on-surface-variant leading-relaxed">
-              Единственная платная услуга на сайте — <strong className="text-on-surface">платная
-              публикация объявления о поездке</strong>. За размещение одной созданной поездки в
+              Единственная платная услуга на сайте — <strong className="text-on-surface">размещение
+              (публикация) объявления о поездке</strong>. За размещение одной созданной поездки в
               общей ленте сервиса взимается фиксированная плата:
             </p>
             <div className="flex items-baseline justify-center gap-2 py-4 rounded-xl bg-primary-container/10 border border-primary-container/30">
-              <span className="text-4xl font-display font-bold text-primary-container">100&nbsp;₽</span>
+              <span className="text-4xl font-display font-bold text-primary-container">{PUBLICATION_PRICE}&nbsp;₽</span>
               <span className="text-sm text-on-surface-variant">за одну публикацию</span>
             </div>
             <div className="flex items-start gap-2.5 rounded-xl bg-[#00e290]/10 border border-[#00e290]/30 px-4 py-3 text-sm text-[#00e290]">
@@ -121,7 +121,7 @@ export function PaidServices() {
               <span>
                 Сейчас публикация поездок <strong>временно бесплатна</strong> — на период
                 подключения платёжной системы ЮMoney. Плата не взимается и платёжные данные
-                не запрашиваются. Плата 100&nbsp;₽ начнёт взиматься после подключения, о чём
+                не запрашиваются. Плата {PUBLICATION_PRICE}&nbsp;₽ начнёт взиматься после подключения, о чём
                 мы сообщим заранее.
               </span>
             </div>
@@ -176,9 +176,17 @@ export function PaidServices() {
               доступным для участия в аукционе другим пользователям.
             </InfoCard>
             <InfoCard icon={<RefreshCcw size={20} />} title="Возврат средств">
-              Если по техническим причинам объявление не было опубликовано, оплата
-              возвращается в полном объёме. Запрос на возврат направляйте на электронную
-              почту поддержки.
+              Если объявление не было опубликовано по технической причине либо оплата прошла
+              ошибочно (например, двойное списание), плата возвращается в полном объёме.
+              Запрос направляйте на почту поддержки: обращение рассматриваем за 3 рабочих дня,
+              деньги возвращаем в течение 10 рабочих дней тем же способом, которым была
+              произведена оплата.
+            </InfoCard>
+            <InfoCard icon={<Receipt size={20} />} title="Чек">
+              По каждой оплате вы получаете чек, сформированный в порядке, установленном для
+              плательщиков налога на профессиональный доход. Плата НДС не облагается.
+              Дополнительно в разделе «Мои поездки» доступна квитанция сервиса с реквизитами
+              платежа — это справочный документ, чек он не заменяет.
             </InfoCard>
           </div>
 

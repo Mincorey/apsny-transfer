@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, Printer, ReceiptText, Loader2, AlertCircle } from 'lucide-react';
-import { SITE } from '../lib/siteInfo';
+import { SITE, OPERATOR, hasOperatorDetails } from '../lib/siteInfo';
 import { parseISODate } from '../lib/utils';
 
 interface ReceiptData {
@@ -162,14 +162,26 @@ export function Receipt() {
             <Row label="Дата и время оплаты">{fmtDateTime(data.paid_at)}</Row>
             <Row label="Идентификатор операции">{data.operation_id || '—'}</Row>
             <Row label="Метка платежа">{data.label}</Row>
-            <Row label="Получатель">Сервис «{SITE.name}»</Row>
+            <Row label="Получатель">
+              {hasOperatorDetails ? (
+                <>
+                  {OPERATOR.fullName}, ИНН {OPERATOR.inn}
+                  <br />
+                  <span className="text-on-surface-variant">сервис «{SITE.name}»</span>
+                </>
+              ) : (
+                <>Сервис «{SITE.name}»</>
+              )}
+            </Row>
             <Row label="Способ оплаты">Банковская карта / СБП (платёжная система ЮMoney)</Row>
           </dl>
 
           <div className="pt-4 border-t border-outline-variant/20 text-[11px] leading-relaxed text-on-surface-variant">
-            Документ является подтверждением оплаты услуги публикации объявления на сервисе {SITE.name}
-            и не является фискальным чеком. Сервис предоставляет информационную площадку и не является
-            перевозчиком. По вопросам оплаты и возврата: {SITE.email}.
+            Документ подтверждает оплату услуги публикации объявления на сервисе {SITE.name} и носит
+            справочный характер. Чек по каждой оплате формируется отдельно, в порядке, установленном
+            для плательщиков налога на профессиональный доход; контрольно-кассовая техника
+            не применяется. Плата НДС не облагается. Сервис предоставляет информационную площадку
+            и не является перевозчиком. По вопросам оплаты и возврата: {SITE.email}.
           </div>
         </div>
       </div>

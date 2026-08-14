@@ -15,7 +15,14 @@ import { publishRideFree, PUBLICATION_PRICE, PAYMENT_PROVIDER, PAYMENTS_ENABLED 
 // рубль не списывался. Это недостоверные сведения об услуге (пункт 2.1 аудита
 // от 10.08.2026), и для платёжного модератора такое — основание для отказа.
 
-type Phase = 'loading' | 'draft' | 'published' | 'notfound';
+// Состояние 'info' — для случая, когда адрес открыт без указания поездки.
+//
+// Раньше страница в этом случае показывала «Поездка не найдена». Для человека,
+// пришедшего по прямой ссылке, это тупик, а для проверяющего платёжной системы —
+// хуже: в анкете на подключение просят адрес страницы приёма платежей, он
+// открывает её и видит ошибку. Теперь без параметра показывается описание
+// услуги и тариф, то есть ровно то, что он и должен увидеть.
+type Phase = 'loading' | 'info' | 'draft' | 'published' | 'notfound';
 
 export function Payment() {
   const navigate = useNavigate();
@@ -30,7 +37,7 @@ export function Payment() {
   useEffect(() => {
     cancelled.current = false;
     if (!rideId) {
-      setPhase('notfound');
+      setPhase('info');
       return;
     }
 
@@ -69,6 +76,85 @@ export function Payment() {
           <div className="text-center space-y-4 py-6">
             <Loader2 size={40} className="text-primary-container mx-auto animate-spin" />
             <p className="text-on-surface-variant text-sm">Загружаем данные поездки…</p>
+          </div>
+        )}
+
+        {phase === 'info' && (
+          <div className="space-y-5">
+            <div className="text-center space-y-2">
+              <h1 className="text-xl font-bold">Оплата публикации поездки</h1>
+              <p className="text-on-surface-variant text-sm">
+                Здесь оплачивается размещение объявления в ленте сервиса
+              </p>
+            </div>
+
+            <div className="glass-card rounded-2xl p-4 space-y-3 text-sm">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-on-surface-variant">Услуга</span>
+                <span className="font-medium text-right">Размещение объявления о поездке</span>
+              </div>
+              <div className="flex items-baseline justify-between gap-3 pt-3 border-t border-outline-variant/20">
+                <span className="text-on-surface-variant">Стоимость</span>
+                <span className="font-medium text-right">
+                  {PUBLICATION_PRICE}&nbsp;₽ за одну публикацию
+                  <br />
+                  <span className="text-on-surface-variant text-xs">независимо от маршрута и даты</span>
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-3 pt-3 border-t border-outline-variant/20">
+                <span className="text-on-surface-variant">Способ оплаты</span>
+                <span className="font-medium text-right">
+                  Банковская карта или СБП<br />
+                  <span className="text-on-surface-variant text-xs">через {PAYMENT_PROVIDER}</span>
+                </span>
+              </div>
+            </div>
+
+            {!PAYMENTS_ENABLED && (
+              <div className="rounded-2xl p-4 bg-[#00e290]/10 border border-[#00e290]/30 space-y-1.5">
+                <div className="flex items-center gap-2 text-[#00e290] font-semibold text-sm">
+                  <Info size={15} />
+                  Сейчас публикация бесплатная
+                </div>
+                <p className="text-on-surface-variant text-xs leading-relaxed">
+                  Приём платежей через {PAYMENT_PROVIDER} находится в процессе подключения.
+                  До его завершения объявления размещаются без оплаты — деньги не списываются,
+                  вводить платёжные данные не нужно.
+                </p>
+              </div>
+            )}
+
+            <p className="text-on-surface-variant text-sm leading-relaxed">
+              Оплата привязана к конкретному объявлению: страница открывается со страницы
+              создания поездки или из раздела «Мои поездки», где ждёт неоплаченный черновик.
+              Отдельной оплаты «просто так», не привязанной к объявлению, в сервисе нет.
+            </p>
+
+            <div className="flex flex-col gap-2.5">
+              <button
+                onClick={() => navigate('/create')}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl btn-mesh font-bold text-white"
+              >
+                Создать поездку <ArrowRight size={16} />
+              </button>
+              <button
+                onClick={() => navigate('/paid-services')}
+                className="w-full px-6 py-3 rounded-xl glass-card border border-outline-variant/40 text-on-surface-variant hover:text-on-surface text-sm font-semibold transition-colors"
+              >
+                Подробнее об услуге и возвратах
+              </button>
+            </div>
+
+            <p className="text-on-surface-variant/60 text-[11px] text-center leading-relaxed">
+              Условия услуги —{' '}
+              <button onClick={() => navigate('/offer')} className="text-primary-container hover:underline">
+                публичная оферта
+              </button>{' '}
+              и{' '}
+              <button onClick={() => navigate('/terms')} className="text-primary-container hover:underline">
+                условия использования
+              </button>.
+            </p>
           </div>
         )}
 
