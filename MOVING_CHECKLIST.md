@@ -38,7 +38,7 @@
 - **pg_cron** — 4 регулярные задачи (было 5; дубль отключён 10.08.2026, см. аудит п. 2.5)
 - **pg_net** — HTTP-запросы в Telegram из БД
 - **Vault** — токен Telegram-бота
-- Realtime — публикация настроена, но фронтенд её не использует (лента обновляется опросом). Можно не поднимать на старте.
+- **Realtime — нужен.** Карточка поездки подписана на ставки и статус (`TripDetail.tsx`), запасного опроса там нет. Без Realtime зрители не видят чужих ставок до перезагрузки. (Исправлено 29.09.2026, аудит С-14.)
 
 Ставить официальный `supabase/supabase` → папка `docker`. Собирать компоненты вручную не стоит.
 
@@ -46,36 +46,80 @@
 
 ## 4. Перенос данных
 
-```bash
-# Дамп из облака
-pg_dump "postgresql://postgres:PASS@db.uprcnpgmmnvsoxasuhun.supabase.co:5432/postgres" \
-  --no-owner --no-privileges \
-  --schema=public --schema=auth --schema=storage \
-  -Fc -f apsny_$(date +%F).dump
+> **Переписано 29.09.2026** по аудиту `АУДИТ-2026-09-29.md`, пункт К-3.
+> Прежний способ (`pg_dump --no-privileges --schema=public --schema=auth
+> --schema=storage` → `pg_restore`) **использовать нельзя**: он переносит
+> данные, но теряет всю защиту базы. Проверено на стенде — после такого
+> переноса у `anon` и `authenticated` в 3,5 раза больше прав на таблицы,
+> чем в облаке (112 вместо 19), и в 3 раза больше прав на колонки (672
+> вместо 228), то есть телефоны читаются без входа, а `publish_ride_paid`
+> вызывается кем угодно.
 
-# Восстановление на VDS
-pg_restore -d postgres --no-owner --no-privileges apsny_2026-08-10.dump
-```
+### 4.1. Почему нужен скрипт, а не одна команда
 
-Пароли пользователей — bcrypt-хеши в `auth.users`, переносятся дампом как есть, пересоздавать аккаунты не нужно.
+1. `--no-privileges` выбрасывает все `GRANT`/`REVOKE`.
+2. Даже **без** этого флага свежий Supabase при создании каждой таблицы и
+   функции сам раздаёт `anon`/`authenticated` полные права («права по
+   умолчанию»), и восстановленные объекты получают больше, чем было.
+3. Триггер `on_auth_user_created`, политики Storage, таблицы Realtime,
+   задачи `pg_cron`, секреты Vault лежат **вне** схемы `public` и в дамп
+   схемы не попадают.
+4. При загрузке данных срабатывают триггеры: `force_ride_draft` превратил
+   бы все поездки в черновики.
+5. Схемы `auth` и `storage` на новом сервере уже созданы самим Supabase
+   своих версий — их переносят **только данными**, не структурой.
+6. В базе ссылки на аватары и фото машин записаны с адресом облака —
+   после переезда их надо переписать на новый домен.
 
-### Что дампом НЕ переносится — делать руками
+Всё это делает `deploy/migrate/migrate-db.sh` и в конце сам сверяет права
+облака и нового сервера. Прогнан на стенде: права, политики, функции,
+триггеры, ограничения и бакеты совпали, поездки сохранили статусы,
+регистрация нового пользователя создаёт профиль, новая поездка создаётся
+черновиком, секреты Vault и задачи `pg_cron` на месте.
 
-- [ ] Секреты Vault: токен Telegram-бота и chat_id
-- [ ] Задачи `pg_cron` — пересоздать 4 штуки:
-  - `* * * * *` → `SELECT close_expired_auctions()`
-  - `0 * * * *` → `SELECT auto_complete_expired_rides()`
-  - `0 3 * * *` → `SELECT run_retention_cleanup()`
-  - `7 * * * *` → `SELECT public.cleanup_unpaid_drafts()`
-  - **`process_expired_auctions()` НЕ восстанавливать** — дубль `close_expired_auctions`, см. аудит п. 2.5.
-    Функция удалена из базы 10.08.2026, в дампе её уже не будет. Если всё же встретится
-    в старом дампе — не создавать и в расписание не ставить.
-- [ ] Настройки Auth: подтверждение email вкл/выкл, SMTP, Site URL, Redirect URLs
-- [ ] Bucket'ы Storage + их политики
-- [ ] Сами файлы из Storage (аватары, фото машин)
-- [ ] Edge Function `yoomoney-webhook` — задеплоить заново
-- [ ] Переменная `YOOMONEY_NOTIFICATION_SECRET` в секретах Edge Functions
-- [ ] **JWT-секрет генерируется новый** → старый `anon key` перестаёт работать, обязательно обновить `.env`
+### 4.2. Порядок
+
+- [ ] **Версия PostgreSQL.** В облаке — **17** (17.6). В `docker-compose.yml` Supabase образ `db` должен быть тоже 17-й версии (`supabase/postgres:17.x`). Если в скачанном compose стоит 15 — поменять тег **до первого запуска**. Скрипт проверяет версии и при расхождении останавливается.
+- [ ] Поднять стек Supabase на новом сервере (раздел 3), убедиться, что все контейнеры `healthy`. Пользователей не пускать.
+- [ ] В панели облака: Connect → **Session pooler** → скопировать строку подключения (прямой адрес `db.<ref>.supabase.co` работает только по IPv6).
+- [ ] Перенос базы:
+  ```bash
+  cd /путь/к/проекту/deploy/migrate
+  export CLOUD_DB_URL='postgresql://postgres.uprcnpgmmnvsoxasuhun:ПАРОЛЬ@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres'
+  export NEW_API_URL='https://api.ВАШ-ДОМЕН'
+  ./migrate-db.sh
+  ```
+  Последние строки вывода должны быть «✅ Все разделы совпали» и «✅ совпало». Если хоть один раздел не совпал — скрипт останавливается, и переезд **не завершён**.
+- [ ] Перенос файлов Storage (аватары, фото машин) — команда в шапке `deploy/migrate/copy-storage.mjs`.
+- [ ] Дампы из папки `migrate-ДАТА` — в надёжное место или удалить: в них персональные данные и хеши паролей. Файл с секретами Vault скрипт удаляет сам.
+- [ ] Контрольная сверка вручную: `docker exec -i supabase-db psql -U postgres -d postgres < verify-grants.sql` на новом сервере и тот же файл в SQL Editor облака — строка **ИТОГО** одинаковая.
+
+Пароли пользователей — bcrypt-хеши в `auth.users`, переносятся как есть, пересоздавать аккаунты не нужно.
+
+### 4.3. Что переносится само, а что руками
+
+| Что | Как |
+|---|---|
+| Таблицы, функции, права, политики `public` | `migrate-db.sh` |
+| Пользователи и их пароли (`auth`) | `migrate-db.sh` |
+| Бакеты Storage и их политики | `migrate-db.sh` |
+| Файлы Storage | `copy-storage.mjs` |
+| Триггер создания профиля на `auth.users` | `migrate-db.sh` |
+| Таблицы Realtime (`rides`, `bids`) | `migrate-db.sh` |
+| Задачи `pg_cron` — ровно с облачными именами и расписанием | `migrate-db.sh` (файл `deploy/cron-jobs.sql` больше не нужен) |
+| Секреты Vault (токен Telegram, chat_id) | `migrate-db.sh` |
+| Ссылки на аватары и фото в базе → новый домен | `migrate-db.sh` |
+| Настройки Auth: подтверждение email, SMTP, Site URL, Redirect URLs | руками, в `.env` нового Supabase |
+| Edge Function `yoomoney-webhook` и секрет `YOOMONEY_NOTIFICATION_SECRET` | руками (или сразу вебхук Т-Бизнес) |
+| JWT-секрет, `anon`/`service_role` ключи | генерируются новые → обновить `.env` фронтенда |
+
+### 4.4. Для репетиции
+
+Скрипт можно прогонять сколько угодно раз на тестовой машине — он не
+трогает облако (только читает), а на новом сервере отказывается работать,
+если в `public` уже есть таблицы. Перед боевым переездом нужна хотя бы
+одна полная репетиция: скрипт → сайт на тестовом адресе → разделы A и B
+`ПРОВЕРИТЬ.md`.
 
 ---
 
@@ -99,36 +143,28 @@ pg_restore -d postgres --no-owner --no-privileges apsny_2026-08-10.dump
 
 ## 6. nginx
 
-`vercel.json` делал одно — SPA-fallback. На nginx:
+> **Переписано 29.09.2026** (аудит, пункт В-2). Прежний пример в этом разделе
+> повторял ошибку: заголовки безопасности стояли на уровне `server`, а в
+> `location` были свои `add_header` — и nginx молча отдавал главную
+> страницу **без CSP и HSTS**. Проверено на стенде: со старым конфигом
+> заголовков нет у `/`, `/index.html`, `/trips/…`, `/assets/…`, значков и
+> манифеста. Кроме того, директива `http2 on;` из старого конфига есть
+> только в nginx 1.25.1+, а в Ubuntu 24.04 стоит 1.24 — nginx не запустился
+> бы вовсе.
 
-```nginx
-server {
-    listen 443 ssl http2;
-    server_name apsny-transfer.ru;
+Готовый конфиг — **`deploy/nginx/`**, два файла:
 
-    root /var/www/apsny/dist;
-    index index.html;
+| Файл | Куда | Что |
+|---|---|---|
+| `apsny-security-headers.conf` | `/etc/nginx/snippets/` | Все заголовки безопасности и CSP в одном месте |
+| `apsny-transfer.conf` | `/etc/nginx/sites-available/` + ссылка в `sites-enabled/` | Фронтенд, API, редирект с http |
 
-    location / { try_files $uri $uri/ /index.html; }
+- [ ] В **обоих** файлах заменить `<ДОМЕН>` на свой домен
+- [ ] `sudo nginx -t && sudo systemctl reload nginx`
+- [ ] Проверка — команда в шапке `apsny-transfer.conf`: для `/`, `/index.html`, `/trips/1`, `/sw.js`, `/manifest.json`, файла из `/assets/` и несуществующего адреса — в каждом ответе должны быть `Content-Security-Policy` и `Strict-Transport-Security`
 
-    location /assets/ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-    location = /index.html {
-        add_header Cache-Control "no-cache, must-revalidate";
-    }
-
-    gzip on;
-    gzip_types text/css application/javascript application/json image/svg+xml;
-
-    add_header X-Frame-Options            "SAMEORIGIN"        always;
-    add_header X-Content-Type-Options     "nosniff"           always;
-    add_header Referrer-Policy            "strict-origin-when-cross-origin" always;
-    add_header Permissions-Policy         "geolocation=(), microphone=(), camera=()" always;
-    add_header Strict-Transport-Security  "max-age=31536000; includeSubDomains" always;
-}
-```
+Правило на будущее: **любой новый `location` фронтенда должен содержать
+строку `include snippets/apsny-security-headers.conf;`**.
 
 Сборка: `npm ci && npm run build`, содержимое `dist/` — в `/var/www/apsny/dist`.
 

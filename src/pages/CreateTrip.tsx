@@ -108,13 +108,12 @@ export function CreateTrip() {
         if (data) {
           setRole(data.role as 'passenger' | 'driver');
           if (data.role === 'driver') {
-            const { data: vData } = await supabase
-              .from('vehicles')
-              .select('id, make_model, license_plate, capacity, is_active')
-              .eq('driver_id', user.id);
+            // Госномер закрыт правами на колонку (аудит 29.09, В-1): свои
+            // машины вместе с номером отдаёт только функция get_my_vehicles.
+            const { data: vData } = await supabase.rpc('get_my_vehicles');
             if (vData) {
-              setVehicles(vData);
-              const active = vData.find((v: any) => v.is_active);
+              setVehicles(vData as Vehicle[]);
+              const active = (vData as Vehicle[]).find((v) => v.is_active);
               if (active) setFormData((prev) => ({ ...prev, vehicle_id: active.id }));
             }
           }

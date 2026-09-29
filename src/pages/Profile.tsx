@@ -149,7 +149,9 @@ export function Profile() {
 
         if (profileData.role === 'driver') {
           const [{ data: vData }, { data: reviewsData }, { data: ridesData }] = await Promise.all([
-            supabase.from('vehicles').select('*').eq('driver_id', user.id),
+            // Госномер закрыт правами на колонку (аудит 29.09, В-1): свои
+            // машины вместе с номером отдаёт только функция get_my_vehicles.
+            supabase.rpc('get_my_vehicles'),
             supabase
               .from('reviews')
               .select('id, rating, comment, created_at, reviewer:users!reviewer_id(full_name, avatar_url)')
@@ -157,7 +159,7 @@ export function Profile() {
               .order('created_at', { ascending: false }),
             ridesPromise,
           ]);
-          if (vData) setVehicles(vData);
+          if (vData) setVehicles(vData as Vehicle[]);
           if (reviewsData) setReviews(reviewsData as unknown as Review[]);
           if (ridesData) setMyRides(ridesData);
         } else {
@@ -322,10 +324,14 @@ export function Profile() {
         capacity: newVehicle.capacity,
         photo_url: photoUrl,
         is_active: vehicles.length === 0, // первое авто сразу активное
-      }).select();
+      })
+        // Без license_plate: читать номер напрямую из таблицы нельзя даже
+        // владельцу (аудит 29.09, В-1). Номер берём из того, что ввели.
+        .select('id, make_model, capacity, photo_url, is_active');
       if (error) throw error;
-      if (data) {
-        setVehicles((prev) => [...prev, data[0] as Vehicle]);
+      if (data?.[0]) {
+        const added: Vehicle = { ...data[0], license_plate: newVehicle.license_plate };
+        setVehicles((prev) => [...prev, added]);
         setShowVehicleForm(false);
         setNewVehicle({ make_model: '', license_plate: '', capacity: 4 });
         setVehiclePhotoFile(null);
