@@ -79,6 +79,17 @@ export default tseslint.config(
     },
   },
   {
+    // Служебные скрипты переезда (deploy/migrate/copy-storage.mjs и т.п.)
+    // тоже запускаются в Node. Без этого блока линтер считал process,
+    // console и fetch неизвестными, и CI падал на шаге Lint с 29.09.2026.
+    files: ['deploy/**/*.{js,mjs}'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: globals.node,
+    },
+  },
+  {
     // Обычные браузерные скрипты из public/ (например canonical.js): Vite их
     // не собирает, они подключаются тегом <script> как есть — значит это не
     // модули, и им нужны браузерные глобальные объекты (location, document).
