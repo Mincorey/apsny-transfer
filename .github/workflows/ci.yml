@@ -21,3 +21,45 @@ jobs:
         run: npm run lint
       - name: Build
         run: npm run build
+
+  # Схема базы, права доступа и SQL-тесты (аудит 29.09.2026, В-5 и С-7).
+  # Собирает базу с нуля из supabase/migrations/ на чистом PostgreSQL 17
+  # (как в облаке), сверяет «отпечаток» прав и функций с боевой базой и
+  # прогоняет SQL-тесты денежной и аукционной логики. Красный крестик
+  # здесь значит: репозиторий разошёлся с боем или сломалась защита.
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Окружение Supabase (заглушка)
+        run: psql -X -q -v ON_ERROR_STOP=1 -f supabase/tests/supabase-stub.sql
+      - name: Миграции по порядку
+        run: |
+          for f in $(ls supabase/migrations/*.sql | sort); do
+            echo "→ $f"
+            psql -X -q -v ON_ERROR_STOP=1 -f "$f"
+          done
+      - name: Отпечаток совпадает с боевой базой
+        run: |
+          psql -X -At -F' | ' -f deploy/migrate/verify-grants.sql > /tmp/actual.txt
+          grep -v '^#' supabase/tests/expected-fingerprint.txt > /tmp/expected.txt
+          diff -u /tmp/expected.txt /tmp/actual.txt
+      - name: SQL-тесты
+        run: psql -X -q -v ON_ERROR_STOP=1 -f supabase/tests/tests.sql

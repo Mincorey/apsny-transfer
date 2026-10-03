@@ -9,6 +9,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Footer } from '../components/layout/Footer';
 import { normalizeWaDigits, waDisplay } from '../lib/contacts';
+import { CONSENT_VERSION } from '../lib/siteInfo';
 
 function CounterValue({ value }: { value: string }) {
   const [displayValue, setDisplayValue] = useState('0');
@@ -194,6 +195,9 @@ export function Auth() {
   const [role, setRole] = useState<'passenger' | 'driver'>('passenger');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  // Согласие на обработку ПДн — отдельной галочкой (152-ФЗ, с 01.09.2025).
+  const [consent, setConsent] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [stats, setStats] = useState(DEFAULT_STATS);
   // Чью половину сделки показываем в блоке «Как это работает».
@@ -271,10 +275,35 @@ export function Auth() {
     });
   };
 
+  // Восстановление пароля (аудит 29.09.2026, В-9). Ответ одинаковый, есть
+  // такой адрес или нет, — чтобы форму нельзя было использовать для проверки,
+  // зарегистрирован ли человек.
+  const handleForgotPassword = async () => {
+    setError(null);
+    setInfo(null);
+    if (!email.trim()) {
+      setError('Введите email, на который зарегистрирован аккаунт, и нажмите «Забыли пароль?» ещё раз');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setInfo('Если такой адрес зарегистрирован, на него придёт письмо со ссылкой для смены пароля. Проверьте и папку «Спам».');
+    } catch (err: unknown) {
+      setError(err instanceof Error && err.message ? err.message : 'Не удалось отправить письмо. Попробуйте позже');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setInfo(null);
 
     try {
       if (isLogin) {
@@ -284,11 +313,20 @@ export function Auth() {
         if (!fullName.trim()) {
           throw new Error('Укажите имя');
         }
+        if (!consent) {
+          throw new Error('Чтобы зарегистрироваться, отметьте согласие на обработку персональных данных');
+        }
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
+            // Куда вернёт ссылка из письма-подтверждения. Без этого GoTrue
+            // подставляет «Site URL» из настроек проекта — после переезда на
+            // свой домен он может оказаться старым.
+            emailRedirectTo: `${window.location.origin}/`,
             data: {
+              // Редакция согласия; база запишет её и время в профиль.
+              consent_version: CONSENT_VERSION,
               full_name: fullName,
               phone,
               role,
@@ -298,6 +336,9 @@ export function Auth() {
           },
         });
         if (error) throw error;
+        if (!data.session) {
+          setInfo('Почти готово: мы отправили письмо на ' + email + '. Откройте ссылку из него, чтобы подтвердить адрес и войти.');
+        }
 
         // Профиль создаётся БД-триггером handle_new_user из метаданных выше —
         // надёжно при любой настройке подтверждения email. Этот insert оставлен
@@ -981,6 +1022,11 @@ export function Auth() {
                 {error}
               </div>
             )}
+            {info && (
+              <div role="status" className="mb-6 p-4 rounded-xl bg-primary-container/10 border border-primary-container/30 text-on-surface text-sm font-medium">
+                {info}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <AnimatePresence mode="popLayout">
@@ -1179,7 +1225,41 @@ export function Auth() {
                 {!isLogin && (
                   <p className="text-xs text-on-surface-variant pl-1">Минимум 8 символов</p>
                 )}
+                {isLogin && (
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      disabled={loading}
+                      className="text-xs font-semibold text-primary-container hover:text-primary transition-colors"
+                    >
+                      Забыли пароль?
+                    </button>
+                  </div>
+                )}
               </div>
+
+              {!isLogin && (
+                <label className="flex items-start gap-3 text-sm text-on-surface-variant cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={consent}
+                    onChange={(e) => setConsent(e.target.checked)}
+                    required
+                    className="mt-1 w-4 h-4 shrink-0 accent-primary-container"
+                  />
+                  <span>
+                    Даю{' '}
+                    <a href="/consent" target="_blank" rel="noopener" className="text-primary-container underline">
+                      согласие на обработку персональных данных
+                    </a>{' '}
+                    и принимаю{' '}
+                    <a href="/terms" target="_blank" rel="noopener" className="text-primary-container underline">условия сервиса</a>.
+                    Как мы обращаемся с данными — в{' '}
+                    <a href="/privacy" target="_blank" rel="noopener" className="text-primary-container underline">политике конфиденциальности</a>.
+                  </span>
+                </label>
+              )}
 
               <button
                 type="submit"
@@ -1199,7 +1279,7 @@ export function Auth() {
                 {isLogin ? 'Нет аккаунта в сети?' : 'Уже зарегистрированы?'}
               </p>
               <button
-                onClick={() => { setIsLogin(!isLogin); setError(null); }}
+                onClick={() => { setIsLogin(!isLogin); setError(null); setInfo(null); }}
                 className="text-primary-container hover:text-primary transition-colors font-bold uppercase tracking-widest text-sm"
               >
                 {isLogin ? 'Создать профиль' : 'ВОЙТИ'}

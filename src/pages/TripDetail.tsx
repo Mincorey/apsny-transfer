@@ -234,6 +234,9 @@ export function TripDetail() {
   const creatorIdRef = useRef<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Роль текущего пользователя: на запрос пассажира торгуются водители,
+  // на предложение водителя — пассажиры (аудит 29.09, В-6).
+  const [userRole, setUserRole] = useState<'passenger' | 'driver' | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [bidDelta, setBidDelta] = useState('');
@@ -283,6 +286,10 @@ export function TripDetail() {
       if (uid) {
         setUserId(uid);
         setIsAuthenticated(true);
+        // Не ждём: роль нужна только чтобы спрятать форму ставки у «не той»
+        // стороны. База проверяет роль сама, это лишь подсказка в интерфейсе.
+        supabase.from('users').select('role').eq('id', uid).maybeSingle()
+          .then(({ data }) => setUserRole((data?.role as 'passenger' | 'driver' | undefined) ?? null));
       }
 
       // get_trip_view: поездка + создатель/победитель (контакты гейтятся серверно)
@@ -482,7 +489,11 @@ export function TripDetail() {
   const isActive = ride.status === 'active';
   const hasHeaderContent = (!!ride.auction_end_time && isActive) || !isAuthenticated;
   const isRequest = ride.type === 'request';
-  const canBid = isAuthenticated && !isOwnRide && isActive;
+  // Торгуется только «другая сторона». Пока роль не загрузилась, форму не
+  // прячем — база всё равно не примет ставку не той стороны.
+  const requiredRole = isRequest ? 'driver' : 'passenger';
+  const isWrongRole = !!userRole && userRole !== requiredRole;
+  const canBid = isAuthenticated && !isOwnRide && isActive && !isWrongRole;
 
   // Роли по типу поездки: водителя оценивает пассажир.
   // offer: водитель = создатель, пассажир = победитель. request: наоборот.
@@ -819,6 +830,19 @@ export function TripDetail() {
               </motion.p>
             )}
           </AnimatePresence>
+
+          {isAuthenticated && !isOwnRide && isActive && isWrongRole && (
+            <div className="pt-3 border-t border-outline-variant/30">
+              <p className="text-sm font-semibold text-on-surface">
+                {isRequest ? 'Это запрос пассажира' : 'Это поездка водителя'}
+              </p>
+              <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                {isRequest
+                  ? 'Предлагать цену на запросы пассажиров могут только водители. Чтобы найти поездку, откройте предложения водителей.'
+                  : 'Торговаться за места в поездке водителя могут только пассажиры. Чтобы найти попутчиков, откройте запросы пассажиров.'}
+              </p>
+            </div>
+          )}
 
           {!isAuthenticated && (
             <div className="pt-2 border-t border-outline-variant/30">

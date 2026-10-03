@@ -456,6 +456,37 @@ export function Profile() {
     await supabase.auth.signOut();
   };
 
+  // Удаление аккаунта (152-ФЗ, аудит 29.09.2026, В-10). Всю работу делает
+  // серверная функция delete-account: проверяет, что удаление не сорвёт
+  // чужую сделку, обезличивает профиль, чистит фото и удаляет учётную запись.
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  const confirmDeleteAccount = async () => {
+    setDeletingAccount(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
+      if (error) {
+        // Текст отказа (например, «есть поездка с найденным попутчиком»)
+        // приходит в теле ответа с кодом 409.
+        let message = error.message;
+        try {
+          const ctx = (error as { context?: Response }).context;
+          const body = ctx ? await ctx.json() : null;
+          if (body?.error) message = body.error;
+        } catch { /* тело не JSON — оставляем общее сообщение */ }
+        throw new Error(message);
+      }
+      if (!data?.ok) throw new Error(data?.error || 'Не удалось удалить аккаунт');
+      showToast('success', 'Аккаунт удалён', 'Ваши данные обезличены. Спасибо, что были с нами');
+      await supabase.auth.signOut();
+    } catch (err: unknown) {
+      showToast('error', 'Аккаунт не удалён', err instanceof Error && err.message ? err.message : 'Попробуйте позже');
+      setDeletingAccount(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -583,7 +614,7 @@ export function Profile() {
                   : <Camera size={22} className="text-white" />}
               </div>
             </button>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarUpload} />
           </div>
         </div>
 
@@ -1047,7 +1078,7 @@ export function Profile() {
                       <input
                         ref={vehiclePhotoRef}
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/webp"
                         className="hidden"
                         onChange={handleVehiclePhotoSelect}
                       />
@@ -1221,13 +1252,24 @@ export function Profile() {
             <input
               ref={editPhotoRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               className="hidden"
               onChange={handleEditPhotoSelect}
             />
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Удаление аккаунта */}
+      <div className="px-4 pt-10 pb-4 text-center">
+        <button
+          type="button"
+          onClick={() => { setDeleteConfirmText(''); setShowDeleteAccount(true); }}
+          className="text-sm text-on-surface-variant hover:text-error underline underline-offset-4 transition-colors"
+        >
+          Удалить аккаунт
+        </button>
+      </div>
 
       <LogoutModal
         open={showLogoutModal}
@@ -1298,6 +1340,59 @@ export function Profile() {
               <ImageOff size={16} />
             )}
             Удалить фото
+          </button>
+        </div>
+      </Modal>
+
+      <Modal
+        open={showDeleteAccount}
+        onClose={() => { if (!deletingAccount) setShowDeleteAccount(false); }}
+        title="Удалить аккаунт?"
+        size="sm"
+      >
+        <div className="space-y-3 text-sm text-on-surface-variant">
+          <p>
+            Имя, телефон, email, мессенджеры, фото и госномера будут стёрты, войти в этот аккаунт
+            станет нельзя. Ваши активные объявления снимутся, участники аукционов получат уведомление.
+          </p>
+          <p>
+            Завершённые поездки и отзывы останутся у второй стороны — без ваших данных, как
+            «Пользователь удалён». Сведения о платежах хранятся по закону.
+          </p>
+          <p>
+            Если у вас есть поездка с найденным попутчиком или вы лидируете в аукционе, удалить
+            аккаунт можно после их завершения.
+          </p>
+          <label htmlFor="delete-confirm" className="block pt-2 text-on-surface font-medium">
+            Чтобы подтвердить, напишите «удалить»
+          </label>
+          <input
+            id="delete-confirm"
+            value={deleteConfirmText}
+            onChange={(e) => setDeleteConfirmText(e.target.value)}
+            autoComplete="off"
+            className="w-full px-4 py-3 rounded-xl input-glass text-on-surface"
+          />
+        </div>
+        <div className="flex gap-3 pt-5">
+          <button
+            onClick={() => setShowDeleteAccount(false)}
+            disabled={deletingAccount}
+            className="flex-1 py-3 rounded-xl border border-outline-variant/30 hover:bg-surface-container font-semibold transition-all disabled:opacity-50"
+          >
+            Отмена
+          </button>
+          <button
+            onClick={confirmDeleteAccount}
+            disabled={deletingAccount || deleteConfirmText.trim().toLowerCase() !== 'удалить'}
+            className="flex-1 py-3 rounded-xl bg-error/15 text-error border border-error/30 hover:bg-error/25 font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {deletingAccount ? (
+              <div className="w-4 h-4 border-2 border-error border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Trash2 size={16} />
+            )}
+            Удалить навсегда
           </button>
         </div>
       </Modal>

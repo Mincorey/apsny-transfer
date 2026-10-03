@@ -51,20 +51,29 @@ export function getImageProps(
   };
 }
 
+/** Форматы, которые принимает хранилище (аудит 29.09.2026, В-13). */
+export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+const ALLOWED = new Set<string>(ALLOWED_IMAGE_TYPES);
+
 /**
- * Сжимает и ресайзит изображение на клиенте ДО загрузки в Storage.
- * На Free-тарифе Supabase нет серверных трансформаций изображений, поэтому
- * уменьшаем файл сами: меньше места в Storage (1 ГБ) и меньше egress (5 ГБ).
- * Возвращает новый File (JPEG); при ошибке или неподходящем типе — исходный файл.
+ * Готовит фото к загрузке: уменьшает до maxSize по большей стороне и
+ * перекодирует в JPEG.
+ *
+ * Раньше при любой неудаче функция молча возвращала исходный файл — так в
+ * хранилище мог уйти файл любого типа (GIF, SVG, HEIC, вообще не картинка).
+ * Теперь на выходе всегда JPEG, PNG или WebP; всё остальное — понятная
+ * ошибка, которую страница показывает пользователю. Сервер (лимиты бакета
+ * avatars) проверяет то же самое независимо от этой функции.
  */
 export async function compressImage(
   file: File,
   options: { maxSize?: number; quality?: number } = {}
 ): Promise<File> {
   const { maxSize = 1024, quality = 0.8 } = options;
-  // Только растровые изображения; GIF не трогаем (потеряется анимация).
-  if (!file.type.startsWith('image/') || file.type === 'image/gif') return file;
+  const notAPhoto = new Error('Можно загрузить только фото в формате JPG, PNG или WebP');
+  if (!file.type.startsWith('image/')) throw notAPhoto;
 
+  let img: HTMLImageElement;
   try {
     const dataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
@@ -72,42 +81,51 @@ export async function compressImage(
       reader.onerror = () => reject(new Error('read error'));
       reader.readAsDataURL(file);
     });
-
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const image = new Image();
       image.onload = () => resolve(image);
       image.onerror = () => reject(new Error('decode error'));
       image.src = dataUrl;
     });
-
-    let width = img.naturalWidth || img.width;
-    let height = img.naturalHeight || img.height;
-    if (width > maxSize || height > maxSize) {
-      if (width >= height) {
-        height = Math.round(height * (maxSize / width));
-        width = maxSize;
-      } else {
-        width = Math.round(width * (maxSize / height));
-        height = maxSize;
-      }
-    }
-
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return file;
-    ctx.drawImage(img, 0, 0, width, height);
-
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, 'image/jpeg', quality)
-    );
-    // Нет выигрыша по размеру — оставляем оригинал.
-    if (!blob || blob.size >= file.size) return file;
-
-    const newName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
-    return new File([blob], newName, { type: 'image/jpeg' });
   } catch {
-    return file; // при любой ошибке грузим как есть
+    // Браузер не смог прочитать картинку (например, HEIC не в Safari).
+    // Пропускаем только разрешённые форматы — остальное отклоняем.
+    if (ALLOWED.has(file.type)) return file;
+    throw notAPhoto;
   }
+
+  let width = img.naturalWidth || img.width;
+  let height = img.naturalHeight || img.height;
+  if (width > maxSize || height > maxSize) {
+    if (width >= height) {
+      height = Math.round(height * (maxSize / width));
+      width = maxSize;
+    } else {
+      width = Math.round(width * (maxSize / height));
+      height = maxSize;
+    }
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    if (ALLOWED.has(file.type)) return file;
+    throw notAPhoto;
+  }
+  ctx.drawImage(img, 0, 0, width, height);
+
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, 'image/jpeg', quality)
+  );
+  if (!blob) {
+    if (ALLOWED.has(file.type)) return file;
+    throw notAPhoto;
+  }
+  // Оригинал оставляем, только если он и меньше, и в разрешённом формате.
+  if (blob.size >= file.size && ALLOWED.has(file.type)) return file;
+
+  const newName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+  return new File([blob], newName, { type: 'image/jpeg' });
 }

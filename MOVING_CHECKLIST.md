@@ -136,8 +136,9 @@
 | **CSP** | В `vercel.json` политика содержит домен Supabase (`uprcnpgmmnvsoxasuhun.supabase.co`) в `connect-src` и `img-src`. При переезде **обязательно заменить на новый адрес**, иначе браузер заблокирует все запросы к базе и сайт перестанет работать. Политика пока в режиме `Report-Only` — порядок включения в `ПРОВЕРИТЬ.md`, раздел C2 |
 | ~~`package.json`~~ | ~~переименовать с `react-example`~~ — сделано 12.08.2026 |
 | Кабинет ЮMoney | новый URL вебхука |
-| Supabase Auth | Site URL и Redirect URLs на новый домен |
+| Supabase Auth | Site URL и Redirect URLs на новый домен (`GOTRUE_SITE_URL`, `GOTRUE_URI_ALLOW_LIST`). В списке обязательно `https://<домен>/reset-password` — иначе ссылка «Забыли пароль?» уведёт на главную (В-9) |
 | Edge Function | Развернуть `yoomoney-webhook` заново (**версия 5** от 12.08.2026, `verify_jwt: false`) и **перенести секрет `YOOMONEY_NOTIFICATION_SECRET`** — без него функция с версии 5 честно отвечает 500 и пишет в Telegram, а не молчит |
+| Edge Function `delete-account` | Развернуть (`verify_jwt` можно оставить включённым — функция сама проверяет токен). Нужны `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` — на своём сервере это переменные контейнера `functions`. Без неё кнопка «Удалить аккаунт» в профиле отвечает ошибкой (В-10) |
 
 ---
 

@@ -31,6 +31,8 @@ const Contacts = lazy(() => import('./pages/Contacts').then((m) => ({ default: m
 const Privacy = lazy(() => import('./pages/Privacy').then((m) => ({ default: m.Privacy })));
 const Terms = lazy(() => import('./pages/Terms').then((m) => ({ default: m.Terms })));
 const Offer = lazy(() => import('./pages/Offer').then((m) => ({ default: m.Offer })));
+const Consent = lazy(() => import('./pages/Consent').then((m) => ({ default: m.Consent })));
+const ResetPassword = lazy(() => import('./pages/ResetPassword').then((m) => ({ default: m.ResetPassword })));
 const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })));
 
 /**
@@ -118,6 +120,10 @@ export default function App() {
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/offer" element={<Offer />} />
+              <Route path="/consent" element={<Consent />} />
+              {/* Доступна и без входа, и «вошедшему»: ссылка из письма создаёт
+                  сессию восстановления, и App уже считает человека вошедшим. */}
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route
                 path="/rides/passenger"
                 element={<PublicLayout><Feed feedType="offer" /></PublicLayout>}

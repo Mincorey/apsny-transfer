@@ -83,6 +83,8 @@ export function CreateTrip() {
     return () => clearInterval(id);
   }, []);
   const TOTAL_STEPS = 4;
+  // Минимальный запас до выезда: час до конца аукциона + 15 минут на торги.
+  const MIN_LEAD_MINUTES = 75;
 
   const [formData, setFormData] = useState({
     origin: '',
@@ -145,7 +147,9 @@ export function CreateTrip() {
       if (isNaN(departure.getTime()) || h === undefined || m === undefined
           || isNaN(h) || isNaN(m)) return false;
       departure.setHours(h, m, 0, 0);
-      return departure.getTime() > now;
+      // Аукцион заканчивается не позже чем за час до выезда, и публиковать
+      // меньше чем за 15 минут до этого момента база не даёт (аудит С-2).
+      return departure.getTime() > now + MIN_LEAD_MINUTES * 60_000;
     }
     if (currentStep === 3) return isPriceValid;
     return true;
@@ -334,6 +338,10 @@ export function CreateTrip() {
                   </div>
                 </div>
               </div>
+              <p className="text-xs text-on-surface-variant pl-1 -mt-3">
+                Аукцион закончится не позже чем за час до выезда, чтобы вы успели созвониться.
+                Поэтому выезд — не раньше чем через 1 ч 15 мин.
+              </p>
 
               <div className="space-y-1">
                 {/*
